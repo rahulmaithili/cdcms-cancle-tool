@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HP GAS CDCMS - Test Simulator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background: #f4f4f4;
+    }
+    .top-header {
+      background: #ffffff;
+      padding: 10px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 2px solid #0056b3;
+    }
+    .top-header h1 {
+      margin: 0;
+      font-size: 20px;
+      color: #b22222;
+    }
+    .agency-info {
+      font-size: 13px;
+      font-weight: bold;
+      color: #333;
+    }
+    .main-content {
+      padding: 20px;
+      max-width: 1000px;
+      margin: auto;
+    }
+    .screen-header {
+      color: #004085;
+      font-weight: bold;
+      font-size: 14px;
+      margin-bottom: 15px;
+    }
+    .section-box {
+      background: #e8eff7;
+      border: 1px solid #b8daff;
+      border-radius: 4px;
+      margin-bottom: 15px;
+    }
+    .section-title {
+      background: #d0e2f5;
+      padding: 6px 12px;
+      font-weight: bold;
+      font-size: 12px;
+      color: #004085;
+      border-bottom: 1px solid #b8daff;
+    }
+    .section-body {
+      padding: 12px;
+    }
+    .form-row {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      margin-bottom: 10px;
+    }
+    .form-label {
+      width: 120px;
+      font-size: 13px;
+      color: #333;
+    }
+    .form-input {
+      padding: 5px 8px;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      font-size: 13px;
+      width: 200px;
+    }
+    .btn {
+      padding: 5px 15px;
+      font-size: 13px;
+      cursor: pointer;
+      border-radius: 3px;
+      border: 1px solid #ccc;
+    }
+    .btn-fetch {
+      background: #e9ecef;
+      color: #333;
+    }
+    .btn-clear {
+      background: #0056b3;
+      color: white;
+      border-color: #004085;
+    }
+    .btn-block {
+      background: #004085;
+      color: white;
+      font-weight: bold;
+      padding: 7px 20px;
+      margin-top: 15px;
+      border-color: #002752;
+    }
+    .details-box {
+      background: #ffffff;
+      border: 1px solid #ddd;
+      padding: 10px;
+      margin-top: 10px;
+      font-size: 12px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="top-header">
+    <h1>HP GAS CDCMS (Simulator)</h1>
+    <div class="agency-info">SHIVSHAKTI HP GAS AGENCY (41016078)</div>
+  </div>
+
+  <div class="main-content">
+    <div class="screen-header">
+      Consumer Management/Block Consumer &nbsp;&nbsp; ScreenCode(CM-16)
+    </div>
+
+    <!-- FILTERING CRITERION -->
+    <div class="section-box">
+      <div class="section-title">FILTERING CRITERION</div>
+      <div class="section-body">
+        <div class="form-row">
+          <div class="form-label">Consumer No:</div>
+          <input type="text" id="txtConsumerNo" class="form-input" placeholder="e.g. 825558" />
+          <input type="button" id="btnFetch" class="btn btn-fetch" value="Fetch" />
+          <input type="button" id="btnClear" class="btn btn-clear" value="Clear" />
+        </div>
+      </div>
+    </div>
+
+    <!-- CONSUMER DETAILS (EXPANDED ON FETCH) -->
+    <div id="consumerDetailsBox" class="section-box details-box">
+      <div class="section-title">CONSUMER DETAILS</div>
+      <div class="section-body" id="consumerDetailsText">
+        Name: RAMESH KUMAR &nbsp;|&nbsp; Category: DOMESTIC &nbsp;|&nbsp; Status: ACTIVE
+      </div>
+    </div>
+
+    <!-- BLOCK SECTION -->
+    <div class="section-box">
+      <div class="section-body">
+        <div class="form-row">
+          <div class="form-label">Block Reason</div>
+          <select id="ddlBlockReason" class="form-input" style="width: 250px;">
+            <option value="1">NonKYC-NCTC-NonGIU Block</option>
+            <option value="2">Multiple Connection Block</option>
+            <option value="3">Address Verification Failed</option>
+            <option value="4">Deceased Consumer</option>
+          </select>
+
+          <div class="form-label" style="width: 80px; text-align: right;">Remarks</div>
+          <input type="text" id="txtRemarks" class="form-input" placeholder="Remarks" />
+        </div>
+
+        <div style="text-align: center;">
+          <input type="button" id="btnBlock" class="btn btn-block" value="Block" />
+        </div>
+      </div>
+    </div>
+
+    <!-- DEVELOPER BRANDING & OFFICIAL SUPPORT -->
+    <div style="margin-top: 30px; padding: 18px 20px; background: #021a10; border-radius: 12px; border: 1px solid #064e3b; text-align: center; color: #ffffff;">
+      <div style="display: inline-flex; align-items: center; gap: 8px; background: rgba(6, 78, 59, 0.6); border: 1px solid #10b981; color: #34d399; font-size: 13px; font-weight: 600; padding: 5px 16px; border-radius: 25px;">
+        <span>👤</span> Developed by <strong>Mr. Rahul Script</strong>
+      </div>
+      <div style="font-size: 12px; color: #a7f3d0; margin-top: 8px; letter-spacing: 0.3px;">
+        Official Copyright & Technical Support • Business Automation Solutions
+      </div>
+      <div style="display: flex; gap: 12px; margin-top: 14px; justify-content: center; flex-wrap: wrap;">
+        <a href="https://wa.me/917564948617" target="_blank" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; background: rgba(16, 185, 129, 0.15); border: 1px solid #059669; color: #34d399;">
+          <span>💬</span> WhatsApp: +917564948617
+        </a>
+        <a href="mailto:life.rahulg@gmail.com" style="text-decoration: none; display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 6px 14px; border-radius: 20px; background: rgba(59, 130, 246, 0.15); border: 1px solid #2563eb; color: #93c5fd;">
+          <span>✉</span> Email: life.rahulg@gmail.com
+        </a>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    // Simulate portal behavior
+    const txtConsumerNo = document.getElementById('txtConsumerNo');
+    const btnFetch = document.getElementById('btnFetch');
+    const btnClear = document.getElementById('btnClear');
+    const ddlBlockReason = document.getElementById('ddlBlockReason');
+    const txtRemarks = document.getElementById('txtRemarks');
+    const btnBlock = document.getElementById('btnBlock');
+    const detailsBox = document.getElementById('consumerDetailsBox');
+
+    btnFetch.addEventListener('click', () => {
+      const val = txtConsumerNo.value.trim();
+      if (!val) {
+        alert('Please enter Consumer Number');
+        return;
+      }
+
+      // Simulate simulated error for consumer 999999
+      if (val === '999999') {
+        alert('Consumer Number does not exist!');
+        detailsBox.style.display = 'none';
+        return;
+      }
+
+      // Simulate already blocked for 888888
+      if (val === '888888') {
+        alert('Consumer is already in Blocked status!');
+        detailsBox.style.display = 'none';
+        return;
+      }
+
+      detailsBox.style.display = 'block';
+      document.getElementById('consumerDetailsText').innerHTML = 
+        `Consumer No: <strong>${val}</strong> | Name: TEST USER ${val} | Status: ACTIVE`;
+    });
+
+    btnClear.addEventListener('click', () => {
+      txtConsumerNo.value = '';
+      detailsBox.style.display = 'none';
+      txtRemarks.value = '';
+    });
+
+    btnBlock.addEventListener('click', () => {
+      const val = txtConsumerNo.value.trim();
+      if (!val) {
+        alert('Please fetch consumer details first');
+        return;
+      }
+      const confirmed = confirm(`Are you sure you want to block consumer ${val}?`);
+      if (confirmed) {
+        alert(`Consumer ${val} blocked successfully!`);
+        detailsBox.style.display = 'none';
+        txtConsumerNo.value = '';
+        txtRemarks.value = '';
+      }
+    });
+  </script>
+</body>
+</html>
