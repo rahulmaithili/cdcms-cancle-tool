@@ -241,11 +241,15 @@
     const panelStyle = (isMinimized && !forceOpen) ? 'none' : 'flex';
     const launcherStyle = (isMinimized && !forceOpen) ? 'flex' : 'none';
 
+    const logoIconUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL) ? chrome.runtime.getURL('icons/icon48.png') : '';
+    const logoBigUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL) ? chrome.runtime.getURL('icons/icon128.png') : '';
+
     const root = document.createElement('div');
     root.id = 'cdcms-blocker-root';
 
     root.innerHTML = `
       <div id="cdcms-launcher-btn" style="display: ${launcherStyle}; cursor: pointer;" title="Click to open HP Gas CDCMS Auto-Blocker">
+        ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-launcher-logo" alt="RS" />` : ''}
         <span id="cdcms-launcher-label">⚡ CDCMS Auto-Blocker</span>
         <span id="cdcms-launcher-close" title="Close completely (Hide from screen)" style="margin-left: 8px; font-size: 13px; font-weight: bold; opacity: 0.8; padding: 1px 6px; border-radius: 50%; background: rgba(0,0,0,0.25);">✕</span>
       </div>
@@ -253,6 +257,7 @@
       <div id="cdcms-panel" style="display: ${panelStyle};">
         <div class="cdcms-panel-header" id="cdcms-panel-drag">
           <div class="cdcms-header-title">
+            ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-logo-icon" alt="RS" />` : ''}
             <span>⚡ HP Gas CDCMS Blocker</span>
             <span class="cdcms-badge">CM-16</span>
           </div>
@@ -263,98 +268,122 @@
         </div>
 
         <div class="cdcms-panel-body">
-          <div class="cdcms-form-group">
-            <div class="cdcms-label">
-              <span>Consumer Numbers (Paste List)</span>
-              <span id="cdcms-total-count" style="color: #0284c7;">0 numbers</span>
-            </div>
-            <textarea id="cdcms-consumer-list" class="cdcms-textarea" placeholder="Paste Consumer Numbers here (one per line, comma or space separated)&#10;825558&#10;825559&#10;825560..."></textarea>
+          <!-- License Status Strip -->
+          <div id="cdcms-license-strip" class="cdcms-license-strip" style="display: none;">
+            <span id="cdcms-strip-text">🛡️ License: Checking...</span>
+            <button id="cdcms-deactivate-btn" class="cdcms-lic-btn-change">Change Key</button>
           </div>
 
-          <div class="cdcms-row-2">
+          <!-- Lock Screen (When License Inactive) -->
+          <div id="cdcms-lock-screen" class="cdcms-lock-screen">
+            ${logoBigUrl ? `<img src="${logoBigUrl}" class="cdcms-lock-logo" alt="RS Logo">` : ''}
+            <div class="cdcms-lock-title">License Activation Required</div>
+            <div class="cdcms-lock-subtitle">Please enter your SaaS License Key to activate automation on this agency account.</div>
+            <div class="cdcms-lock-input-wrap">
+              <input type="text" id="cdcms-license-input" class="cdcms-lock-input" placeholder="Paste License Key (RS-...)" />
+              <button id="cdcms-license-submit" class="cdcms-lock-btn">🔑 Activate License</button>
+            </div>
+            <div id="cdcms-license-msg" class="cdcms-lock-status"></div>
+            <a href="https://wa.me/917564948617?text=Hello%20Mr.%20Rahul%20Script,%20I%20need%20a%20License%20Key%20for%20HP%20Gas%20CDCMS%20Blocker" target="_blank" class="cdcms-lock-wa-btn">
+              <span>💬</span> Get License Key (WhatsApp: +917564948617)
+            </a>
+          </div>
+
+          <!-- Main Automation Form (Unlocked on Active License) -->
+          <div id="cdcms-main-form" style="display: none; flex-direction: column; gap: 12px;">
             <div class="cdcms-form-group">
-              <label class="cdcms-label">Block Reason</label>
-              <select id="cdcms-block-reason" class="cdcms-select">
-                <option value="auto">Auto-detect from page</option>
-              </select>
+              <div class="cdcms-label">
+                <span>Consumer Numbers (Paste List)</span>
+                <span id="cdcms-total-count" style="color: #0284c7;">0 numbers</span>
+              </div>
+              <textarea id="cdcms-consumer-list" class="cdcms-textarea" placeholder="Paste Consumer Numbers here (one per line, comma or space separated)&#10;825558&#10;825559&#10;825560..."></textarea>
             </div>
-            <div class="cdcms-form-group">
-              <label class="cdcms-label">Remarks</label>
-              <input type="text" id="cdcms-remarks" class="cdcms-input" value="ekyc pending" placeholder="e.g. ekyc pending" />
-            </div>
-          </div>
 
-          <div class="cdcms-row-2">
-            <div class="cdcms-form-group">
-              <label class="cdcms-label">Delay (Seconds)</label>
-              <select id="cdcms-delay" class="cdcms-select">
-                <option value="1500">1.5 sec (Fast)</option>
-                <option value="2500" selected>2.5 sec (Balanced)</option>
-                <option value="3500">3.5 sec (Safe)</option>
-                <option value="5000">5.0 sec (Slow/Heavy Server)</option>
-              </select>
-            </div>
-            <div class="cdcms-form-group">
-              <label class="cdcms-label">Status</label>
-              <div id="cdcms-status-indicator" style="font-weight: 600; font-size: 11px; padding: 7px 0; color: #64748b;">Ready</div>
-            </div>
-          </div>
-
-          <div class="cdcms-actions">
-            <button id="cdcms-start-btn" class="cdcms-btn cdcms-btn-primary">
-              <span>▶</span> Start Blocking
-            </button>
-            <button id="cdcms-pause-btn" class="cdcms-btn cdcms-btn-warning" disabled>
-              <span>⏸</span> Pause
-            </button>
-            <button id="cdcms-stop-btn" class="cdcms-btn cdcms-btn-danger" disabled>
-              <span>⏹</span> Stop
-            </button>
-          </div>
-
-          <div class="cdcms-stats-grid">
-            <div class="cdcms-stat-item">
-              <span class="cdcms-stat-val" id="cdcms-stat-total">0</span>
-              <span class="cdcms-stat-lbl">Total</span>
-            </div>
-            <div class="cdcms-stat-item">
-              <span class="cdcms-stat-val success" id="cdcms-stat-success">0</span>
-              <span class="cdcms-stat-lbl">Blocked</span>
-            </div>
-            <div class="cdcms-stat-item">
-              <span class="cdcms-stat-val failed" id="cdcms-stat-failed">0</span>
-              <span class="cdcms-stat-lbl">Failed</span>
-            </div>
-            <div class="cdcms-stat-item">
-              <span class="cdcms-stat-val rem" id="cdcms-stat-rem">0</span>
-              <span class="cdcms-stat-lbl">Remaining</span>
-            </div>
-          </div>
-
-          <div class="cdcms-progress-bar-bg">
-            <div id="cdcms-progress-bar" class="cdcms-progress-bar-fill"></div>
-          </div>
-
-          <div class="cdcms-form-group">
-            <div class="cdcms-label">
-              <span>Activity Log</span>
-              <span id="cdcms-clear-log" style="cursor: pointer; color: #94a3b8; font-size: 11px;">Clear Log</span>
-            </div>
-            <div id="cdcms-log-box" class="cdcms-log-box">
-              <div class="cdcms-log-item info">
-                <span class="cdcms-log-time">[System]</span>
-                <span>Ready. Paste consumer numbers and click 'Start Blocking'.</span>
+            <div class="cdcms-row-2">
+              <div class="cdcms-form-group">
+                <label class="cdcms-label">Block Reason</label>
+                <select id="cdcms-block-reason" class="cdcms-select">
+                  <option value="auto">Auto-detect from page</option>
+                </select>
+              </div>
+              <div class="cdcms-form-group">
+                <label class="cdcms-label">Remarks</label>
+                <input type="text" id="cdcms-remarks" class="cdcms-input" value="ekyc pending" placeholder="e.g. ekyc pending" />
               </div>
             </div>
-          </div>
 
-          <div class="cdcms-footer">
-            <button id="cdcms-download-report" class="cdcms-btn cdcms-btn-secondary">
-              <span>📥</span> Download Report (CSV)
-            </button>
-            <button id="cdcms-copy-failed" class="cdcms-btn cdcms-btn-secondary">
-              <span>📋</span> Copy Failed List
-            </button>
+            <div class="cdcms-row-2">
+              <div class="cdcms-form-group">
+                <label class="cdcms-label">Delay (Seconds)</label>
+                <select id="cdcms-delay" class="cdcms-select">
+                  <option value="1500">1.5 sec (Fast)</option>
+                  <option value="2500" selected>2.5 sec (Balanced)</option>
+                  <option value="3500">3.5 sec (Safe)</option>
+                  <option value="5000">5.0 sec (Slow/Heavy Server)</option>
+                </select>
+              </div>
+              <div class="cdcms-form-group">
+                <label class="cdcms-label">Status</label>
+                <div id="cdcms-status-indicator" style="font-weight: 600; font-size: 11px; padding: 7px 0; color: #64748b;">Ready</div>
+              </div>
+            </div>
+
+            <div class="cdcms-actions">
+              <button id="cdcms-start-btn" class="cdcms-btn cdcms-btn-primary">
+                <span>▶</span> Start Blocking
+              </button>
+              <button id="cdcms-pause-btn" class="cdcms-btn cdcms-btn-warning" disabled>
+                <span>⏸</span> Pause
+              </button>
+              <button id="cdcms-stop-btn" class="cdcms-btn cdcms-btn-danger" disabled>
+                <span>⏹</span> Stop
+              </button>
+            </div>
+
+            <div class="cdcms-stats-grid">
+              <div class="cdcms-stat-item">
+                <span class="cdcms-stat-val" id="cdcms-stat-total">0</span>
+                <span class="cdcms-stat-lbl">Total</span>
+              </div>
+              <div class="cdcms-stat-item">
+                <span class="cdcms-stat-val success" id="cdcms-stat-success">0</span>
+                <span class="cdcms-stat-lbl">Blocked</span>
+              </div>
+              <div class="cdcms-stat-item">
+                <span class="cdcms-stat-val failed" id="cdcms-stat-failed">0</span>
+                <span class="cdcms-stat-lbl">Failed</span>
+              </div>
+              <div class="cdcms-stat-item">
+                <span class="cdcms-stat-val rem" id="cdcms-stat-rem">0</span>
+                <span class="cdcms-stat-lbl">Remaining</span>
+              </div>
+            </div>
+
+            <div class="cdcms-progress-bar-bg">
+              <div id="cdcms-progress-bar" class="cdcms-progress-bar-fill"></div>
+            </div>
+
+            <div class="cdcms-form-group">
+              <div class="cdcms-label">
+                <span>Activity Log</span>
+                <span id="cdcms-clear-log" style="cursor: pointer; color: #94a3b8; font-size: 11px;">Clear Log</span>
+              </div>
+              <div id="cdcms-log-box" class="cdcms-log-box">
+                <div class="cdcms-log-item info">
+                  <span class="cdcms-log-time">[System]</span>
+                  <span>Ready. Paste consumer numbers and click 'Start Blocking'.</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="cdcms-footer">
+              <button id="cdcms-download-report" class="cdcms-btn cdcms-btn-secondary">
+                <span>📥</span> Download Report (CSV)
+              </button>
+              <button id="cdcms-copy-failed" class="cdcms-btn cdcms-btn-secondary">
+                <span>📋</span> Copy Failed List
+              </button>
+            </div>
           </div>
 
           <!-- Developer Branding & Support Section -->
@@ -528,6 +557,65 @@
     // Copy Failed
     copyFailedBtn.addEventListener('click', copyFailedNumbers);
 
+    // Update license display state
+    function updateLicenseStateUI() {
+      const lockScreen = document.getElementById('cdcms-lock-screen');
+      const mainForm = document.getElementById('cdcms-main-form');
+      const strip = document.getElementById('cdcms-license-strip');
+      const stripText = document.getElementById('cdcms-strip-text');
+
+      const lic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
+      if (lic && lic.valid) {
+        if (lockScreen) lockScreen.style.display = 'none';
+        if (mainForm) mainForm.style.display = 'flex';
+        if (strip) strip.style.display = 'flex';
+        if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan}</strong> (${lic.expiry})`;
+      } else {
+        if (lockScreen) lockScreen.style.display = 'flex';
+        if (mainForm) mainForm.style.display = 'none';
+        if (strip) strip.style.display = 'none';
+      }
+    }
+
+    updateLicenseStateUI();
+
+    // License Activation Form Handlers
+    const licSubmit = document.getElementById('cdcms-license-submit');
+    const licInput = document.getElementById('cdcms-license-input');
+    const licMsg = document.getElementById('cdcms-license-msg');
+    const deactBtn = document.getElementById('cdcms-deactivate-btn');
+
+    if (licSubmit && licInput) {
+      licSubmit.addEventListener('click', () => {
+        const key = licInput.value.trim();
+        if (typeof LicenseManager === 'undefined') {
+          if (licMsg) licMsg.innerHTML = '<span style="color: #f87171;">License module not loaded</span>';
+          return;
+        }
+        const res = LicenseManager.validateKey(key);
+        if (res.valid) {
+          LicenseManager.saveLicense(res);
+          if (licMsg) licMsg.innerHTML = '<span style="color: #4ade80;">✔ License Activated Successfully!</span>';
+          setTimeout(() => {
+            updateLicenseStateUI();
+          }, 400);
+        } else {
+          if (licMsg) licMsg.innerHTML = `<span style="color: #f87171;">✖ ${res.message}</span>`;
+        }
+      });
+    }
+
+    if (deactBtn) {
+      deactBtn.addEventListener('click', () => {
+        if (confirm('Are you sure you want to deactivate or change the license key on this browser?')) {
+          if (typeof LicenseManager !== 'undefined') {
+            LicenseManager.removeLicense();
+          }
+          updateLicenseStateUI();
+        }
+      });
+    }
+
     // Draggable header
     makeDraggable(document.getElementById('cdcms-panel-drag'), document.getElementById('cdcms-blocker-root'));
 
@@ -626,6 +714,17 @@
 
   // Start Automation
   function startAutomation() {
+    // Strict License Verification Guard
+    const currentLic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
+    if (!currentLic || !currentLic.valid) {
+      alert('🔒 Access Denied: Please activate a valid License Key to start bulk blocking.');
+      const lockScreen = document.getElementById('cdcms-lock-screen');
+      const mainForm = document.getElementById('cdcms-main-form');
+      if (lockScreen) lockScreen.style.display = 'flex';
+      if (mainForm) mainForm.style.display = 'none';
+      return;
+    }
+
     const textarea = document.getElementById('cdcms-consumer-list');
     const consumerList = parseConsumerList(textarea.value);
 
@@ -679,6 +778,15 @@
   async function checkAndResumeJob() {
     const job = getSavedJob();
     if (!job || !job.isRunning) return;
+
+    // Strict License Verification Guard
+    const currentLic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
+    if (!currentLic || !currentLic.valid) {
+      console.warn('[CDCMS Blocker] Cannot resume job: License invalid or expired.');
+      job.isRunning = false;
+      saveJob(job);
+      return;
+    }
 
     console.log('[CDCMS Blocker] Resuming active job from storage:', job);
 
@@ -1133,6 +1241,23 @@
         localStorage.setItem('cdcms_blocker_minimized', 'false');
         const txt = document.getElementById('cdcms-consumer-list');
         if (txt) txt.focus();
+        sendResponse({ status: 'ok' });
+      } else if (request.action === 'LICENSE_UPDATED') {
+        const lockScreen = document.getElementById('cdcms-lock-screen');
+        const mainForm = document.getElementById('cdcms-main-form');
+        const strip = document.getElementById('cdcms-license-strip');
+        const stripText = document.getElementById('cdcms-strip-text');
+        const lic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
+        if (lic && lic.valid) {
+          if (lockScreen) lockScreen.style.display = 'none';
+          if (mainForm) mainForm.style.display = 'flex';
+          if (strip) strip.style.display = 'flex';
+          if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan}</strong> (${lic.expiry})`;
+        } else {
+          if (lockScreen) lockScreen.style.display = 'flex';
+          if (mainForm) mainForm.style.display = 'none';
+          if (strip) strip.style.display = 'none';
+        }
         sendResponse({ status: 'ok' });
       }
     });

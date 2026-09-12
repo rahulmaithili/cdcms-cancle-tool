@@ -8,11 +8,40 @@
 - **100% Automatic**: Consumer No डालेगा ➔ Fetch क्लिक करेगा ➔ Wait करेगा ➔ Block Reason (`NonKYC-NCTC-NonGIU Block`) सेलेक्ट करेगा ➔ Remarks में `ekyc pending` लिखेगा ➔ Block बटन क्लिक करके कन्फर्म करेगा।
 - **Chrome Extension UI**: आपके CDCMS पेज पर एक सुंदर Floating Control Widget आ जाएगा।
 - **Bulk Paste**: Excel या Notepad से 10, 50, 100 या 1000 कंज्यूमर नंबर एक साथ कॉपी-पेस्ट करें।
+- **SaaS License System**: टूल सुरक्षित है और बिना मान्य License Key के एक्टिवेट नहीं होता।
+- **Admin Key Generator**: मिस्टर राहुल स्क्रिप्ट अपने क्लाइंट्स के लिए 1-महीना, 3-महीना, 6-महीना, 1-साल या लाइफटाइम लाइसेंस की तुरंत बना सकते हैं।
 - **Live Counter & Logs**: Total, Blocked, Failed और Remaining का लाइव स्टेटस दिखता रहेगा।
 - **Auto Popup Accept**: Portal के alert / confirm ("Are you sure to block?") को आटोमेटिक Accept करेगा।
+- **Pending Booking Detection**: अगर किसी कंज्यूमर की बुकिंग पेंडिंग है (145 error), तो टूल उसे रेड फ्लैग करके क्लियर कर आगे बढ़ जाएगा।
 - **Excel/CSV Report**: प्रोसेस खत्म होने के बाद पूरी रिपोर्ट (`CSV/Excel`) डाउनलोड कर सकते हैं।
 - **Failed List Copy**: जो नंबर ब्लॉक नहीं हुए, उन्हें एक क्लिक में कॉपी करके अलग से चेक कर सकते हैं।
 - **Pause / Stop Control**: किसी भी समय प्रोसेस को Pause या Stop कर सकते हैं।
+
+---
+
+## 🔑 SaaS License Key कैसे जनरेट करें (Admin Generator)
+
+एडमिन (Mr. Rahul) अपने क्लाइंट्स को लाइसेंस देने के लिए:
+1. Chrome ब्राउज़र में इस फाइल को खोलें:
+   `license_generator.html`
+2. Agency Name या Distributor ID डालें।
+3. Validity Duration सेलेक्ट करें:
+   - 1 Month
+   - 3 Months
+   - 6 Months
+   - 1 Year (Recommended)
+   - Lifetime (No Expiry)
+4. **"⚡ Generate License Key"** पर क्लिक करें।
+5. **"📲 Send via WhatsApp"** दबाकर सीधे क्लाइंट को लाइसेंस की भेजें!
+
+---
+
+## 🛡️ टूल को कैसे एक्टिवेट करें (Client Activation)
+
+1. CDCMS पोर्टल या एक्सटेंशन आइकन पर क्लिक करें।
+2. फ्लोटिंग पैनल में या एक्सटेंशन पॉपअप में **License Key (RS-...)** पेस्ट करें।
+3. **🔑 Activate License** बटन दबाएं।
+4. टूल तुरंत **UNLOCKED** हो जाएगा और सारे फीचर्स चालू हो जाएंगे!
 
 ---
 
@@ -38,8 +67,8 @@
 - **Consumer Management/Block Consumer (CM-16)** स्क्रीन पर जाएं।
 
 ### स्टेप 2: टूल खोलें
-- स्क्रीन पर आपको नीले रंग का एक बटन दिखेगा: **`⚡ CDCMS Auto-Blocker`**। उस पर क्लिक करें।
-- Floating Panel खुल जाएगा।
+- स्क्रीन पर आपको **`⚡ CDCMS Auto-Blocker`** फ्लोटिंग बटन दिखेगा। उस पर क्लिक करें।
+- पहली बार इस्तेमाल पर अपनी License Key डालकर एक्टिवेट करें।
 
 ### स्टेप 3: कंज्यूमर नंबर पेस्ट करें
 - **"Consumer Numbers (Paste List)"** वाले बॉक्स में अपने सारे Consumer Numbers पेस्ट कर दें (हर लाइन में एक नंबर या कॉमा से अलग)।
@@ -58,9 +87,9 @@
 ## 🧪 ऑफलाइन टेस्ट कैसे करें (Offline Simulator Test)
 यदि आप लाइव पोर्टल पर चलाने से पहले इसका डेमो देखना चाहते हैं:
 1. Chrome में इस फाइल को ओपन करें:  
-   `file:///C:/Users/USER/Videos/Cdcmas consumer block tool/test_cdcms_page.html`
+   `test_cdcms_page.html`
 2. आपको ठीक CDCMS पोर्टल जैसा टेस्ट पेज दिखेगा।
-3. `⚡ CDCMS Auto-Blocker` पर क्लिक करके कुछ नंबर (जैसे `825558`, `825559`, `825560`) पेस्ट करके `Start Blocking` दबाएं और जादू देखें!
+3. `⚡ CDCMS Auto-Blocker` पर क्लिक करके लाइसेंस डालें, फिर कुछ नंबर (जैसे `825558`, `825559`, `825560`) पेस्ट करके `Start Blocking` दबाएं और टेस्ट करें!
 
 ---
 

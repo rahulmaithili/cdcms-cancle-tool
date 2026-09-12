@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>RS SaaS - License Key Generator</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #090d16;
+      color: #e2e8f0;
+      margin: 0;
+      padding: 30px 15px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      width: 100%;
+      max-width: 480px;
+      background: #0f172a;
+      border: 1px solid #1e293b;
+      border-radius: 16px;
+      padding: 28px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(56, 189, 248, 0.1);
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    .logo {
+      width: 64px;
+      height: 64px;
+      border-radius: 12px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 16px rgba(2, 132, 199, 0.4);
+    }
+    h1 {
+      font-size: 18px;
+      margin: 0 0 6px 0;
+      color: #ffffff;
+      font-weight: 700;
+    }
+    .tagline {
+      font-size: 12px;
+      color: #38bdf8;
+      font-weight: 600;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    label {
+      display: block;
+      font-size: 12px;
+      font-weight: 600;
+      color: #94a3b8;
+      margin-bottom: 6px;
+    }
+    input, select {
+      width: 100%;
+      background: #1e293b;
+      border: 1px solid #334155;
+      color: #ffffff;
+      padding: 10px 14px;
+      border-radius: 8px;
+      font-size: 13px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    input:focus, select:focus {
+      border-color: #38bdf8;
+      box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+    }
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 13px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background: linear-gradient(135deg, #0369a1 0%, #075985 100%);
+      transform: translateY(-1px);
+    }
+    .result-box {
+      margin-top: 20px;
+      padding: 16px;
+      background: #021a10;
+      border: 1px solid #064e3b;
+      border-radius: 10px;
+      display: none;
+    }
+    .result-title {
+      font-size: 11px;
+      color: #34d399;
+      font-weight: 700;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    .key-display {
+      font-family: monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: #6ee7b7;
+      background: #064e3b;
+      padding: 10px 12px;
+      border-radius: 6px;
+      word-break: break-all;
+      user-select: all;
+      border: 1px solid #10b981;
+      margin-bottom: 10px;
+    }
+    .action-row {
+      display: flex;
+      gap: 8px;
+    }
+    .btn-secondary {
+      flex: 1;
+      padding: 8px 10px;
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #059669;
+      color: #34d399;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      text-decoration: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .btn-secondary:hover {
+      background: rgba(16, 185, 129, 0.4);
+    }
+    .footer {
+      margin-top: 24px;
+      text-align: center;
+      font-size: 11px;
+      color: #64748b;
+      border-top: 1px solid #1e293b;
+      padding-top: 14px;
+    }
+    .footer a {
+      color: #38bdf8;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="card">
+    <div class="header">
+      <img src="icons/icon128.png" alt="RS Logo" class="logo">
+      <h1>HP Gas CDCMS Blocker</h1>
+      <div class="tagline">SaaS License Key Generator (Admin Panel)</div>
+    </div>
+
+    <div class="form-group">
+      <label>Client / Agency Name (Optional):</label>
+      <input type="text" id="client-name" placeholder="e.g. SHIVSHAKTI HP GAS (41016078)">
+    </div>
+
+    <div class="form-group">
+      <label>Select Plan:</label>
+      <select id="plan-select">
+        <option value="PRO" selected>PRO Plan (Standard)</option>
+        <option value="ENT">ENTERPRISE Plan</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label>Validity Duration:</label>
+      <select id="validity-select">
+        <option value="30">1 Month (30 Days)</option>
+        <option value="90">3 Months (90 Days)</option>
+        <option value="180">6 Months (180 Days)</option>
+        <option value="365" selected>1 Year (365 Days)</option>
+        <option value="730">2 Years (730 Days)</option>
+        <option value="LIFETIME">Lifetime (No Expiry)</option>
+      </select>
+    </div>
+
+    <button id="generate-btn" class="btn">
+      <span>⚡</span> Generate License Key
+    </button>
+
+    <div id="result-box" class="result-box">
+      <div class="result-title">✔ Generated License Key:</div>
+      <div id="key-display" class="key-display"></div>
+      <div id="details-text" style="font-size: 11px; color: #a7f3d0; margin-bottom: 10px;"></div>
+      <div class="action-row">
+        <button id="copy-btn" class="btn-secondary">📋 Copy Key</button>
+        <a id="whatsapp-share-btn" target="_blank" class="btn-secondary">💬 Share on WhatsApp</a>
+      </div>
+    </div>
+
+    <div class="footer">
+      Developed by <strong>Mr. Rahul Script</strong><br>
+      Official Copyright & Technical Support • Business Automation Solutions<br>
+      WhatsApp: <a href="https://wa.me/917564948617">+917564948617</a>
+    </div>
+  </div>
+
+  <script src="license.js"></script>
+  <script>
+    document.getElementById('generate-btn').addEventListener('click', () => {
+      const clientName = document.getElementById('client-name').value.trim() || 'Valued Client';
+      const plan = document.getElementById('plan-select').value;
+      const validity = document.getElementById('validity-select').value;
+
+      let expiryDateStr = '99991231';
+      let expiryDisplay = 'Lifetime';
+
+      if (validity !== 'LIFETIME') {
+        const days = parseInt(validity, 10);
+        const exp = new Date();
+        exp.setDate(exp.getDate() + days);
+
+        const y = exp.getFullYear();
+        const m = String(exp.getMonth() + 1).padStart(2, '0');
+        const d = String(exp.getDate()).padStart(2, '0');
+        expiryDateStr = `${y}${m}${d}`;
+        expiryDisplay = `${d}/${m}/${y}`;
+      }
+
+      const key = LicenseManager.createLicenseKey(plan, expiryDateStr);
+
+      document.getElementById('key-display').textContent = key;
+      document.getElementById('details-text').innerHTML = `
+        <strong>Client:</strong> ${clientName} | <strong>Plan:</strong> ${plan} | <strong>Expires:</strong> ${expiryDisplay}
+      `;
+      document.getElementById('result-box').style.display = 'block';
+
+      // WhatsApp Share Link
+      const msg = `Hello ${clientName},\n\nHere is your official License Key for *HP Gas CDCMS Blocker*:\n\n🔑 *License Key:* \`${key}\`\n📅 *Validity:* ${expiryDisplay}\n\n*Steps to Activate:*\n1. Open HP Gas CDCMS Block Consumer page.\n2. Paste this License Key into the tool and click *Activate*.\n\nSupport: +917564948617 (Mr. Rahul Script)`;
+      document.getElementById('whatsapp-share-btn').href = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    });
+
+    document.getElementById('copy-btn').addEventListener('click', () => {
+      const key = document.getElementById('key-display').textContent;
+      navigator.clipboard.writeText(key).then(() => {
+        alert('License Key copied to clipboard!');
+      });
+    });
+  </script>
+</body>
+</html>
