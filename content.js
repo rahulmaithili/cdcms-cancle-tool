@@ -278,14 +278,31 @@
           <div id="cdcms-lock-screen" class="cdcms-lock-screen">
             ${logoBigUrl ? `<img src="${logoBigUrl}" class="cdcms-lock-logo" alt="RS Logo">` : ''}
             <div class="cdcms-lock-title">License Activation Required</div>
-            <div class="cdcms-lock-subtitle">Please enter your SaaS License Key to activate automation on this agency account.</div>
+            <div class="cdcms-lock-subtitle">Please enter your LicenseVault key to unlock bulk blocking for this agency.</div>
+            
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box; font-size: 11px;">
+              <span style="color: #94a3b8;">Device ID:</span>
+              <code id="cdcms-lock-device-id" style="color: #38bdf8; font-family: monospace; font-weight: 700;">LV-...</code>
+              <button id="cdcms-copy-device-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer;">Copy</button>
+            </div>
+
             <div class="cdcms-lock-input-wrap">
-              <input type="text" id="cdcms-license-input" class="cdcms-lock-input" placeholder="Paste License Key (RS-...)" />
-              <button id="cdcms-license-submit" class="cdcms-lock-btn">🔑 Activate License</button>
+              <input type="text" id="cdcms-license-input" class="cdcms-lock-input" placeholder="Paste License Key" />
+              <button id="cdcms-license-submit" class="cdcms-lock-btn">🔑 Activate</button>
             </div>
             <div id="cdcms-license-msg" class="cdcms-lock-status"></div>
-            <a href="https://wa.me/917564948617?text=Hello%20Mr.%20Rahul%20Script,%20I%20need%20a%20License%20Key%20for%20HP%20Gas%20CDCMS%20Blocker" target="_blank" class="cdcms-lock-wa-btn">
-              <span>💬</span> Get License Key (WhatsApp: +917564948617)
+
+            <div style="display: flex; gap: 8px; width: 100%; margin-top: 10px;">
+              <a href="https://licensescript.netlify.app/#pricing-section" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(2, 132, 199, 0.2); border: 1px solid #0284c7; color: #38bdf8; font-size: 11px;">
+                <span>⚡</span> Get on LicenseVault
+              </a>
+              <a href="https://licensescript.netlify.app/#validate-section" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; font-size: 11px;">
+                <span>🔍</span> Verify on Web
+              </a>
+            </div>
+
+            <a href="https://wa.me/917564948617?text=Hello%20Mr.%20Rahul%20Script,%20I%20need%20a%20License%20Key%20for%20HP%20Gas%20CDCMS%20Blocker" target="_blank" class="cdcms-lock-wa-btn" style="margin-top: 8px; width: 100%; box-sizing: border-box; justify-content: center;">
+              <span>💬</span> WhatsApp Support (+917564948617)
             </a>
           </div>
 
@@ -557,19 +574,26 @@
     // Copy Failed
     copyFailedBtn.addEventListener('click', copyFailedNumbers);
 
+
     // Update license display state
     function updateLicenseStateUI() {
       const lockScreen = document.getElementById('cdcms-lock-screen');
       const mainForm = document.getElementById('cdcms-main-form');
       const strip = document.getElementById('cdcms-license-strip');
       const stripText = document.getElementById('cdcms-strip-text');
+      const deviceIdEl = document.getElementById('cdcms-lock-device-id');
+
+      if (deviceIdEl && typeof LicenseManager !== 'undefined') {
+        deviceIdEl.textContent = LicenseManager.getDeviceId();
+      }
 
       const lic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
       if (lic && lic.valid) {
         if (lockScreen) lockScreen.style.display = 'none';
         if (mainForm) mainForm.style.display = 'flex';
         if (strip) strip.style.display = 'flex';
-        if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan}</strong> (${lic.expiry})`;
+        const agencyName = lic.company ? ` • ${lic.company}` : '';
+        if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan || 'PRO'}</strong> (${lic.expiry || 'Active'})${agencyName}`;
       } else {
         if (lockScreen) lockScreen.style.display = 'flex';
         if (mainForm) mainForm.style.display = 'none';
@@ -579,6 +603,19 @@
 
     updateLicenseStateUI();
 
+    // Copy Device ID button in lock screen
+    const copyDevBtn = document.getElementById('cdcms-copy-device-btn');
+    if (copyDevBtn) {
+      copyDevBtn.addEventListener('click', () => {
+        const devId = typeof LicenseManager !== 'undefined' ? LicenseManager.getDeviceId() : '';
+        navigator.clipboard.writeText(devId).then(() => {
+          const orig = copyDevBtn.textContent;
+          copyDevBtn.textContent = 'Copied!';
+          setTimeout(() => { copyDevBtn.textContent = orig; }, 1200);
+        });
+      });
+    }
+
     // License Activation Form Handlers
     const licSubmit = document.getElementById('cdcms-license-submit');
     const licInput = document.getElementById('cdcms-license-input');
@@ -586,28 +623,44 @@
     const deactBtn = document.getElementById('cdcms-deactivate-btn');
 
     if (licSubmit && licInput) {
-      licSubmit.addEventListener('click', () => {
+      licSubmit.addEventListener('click', async () => {
         const key = licInput.value.trim();
-        if (typeof LicenseManager === 'undefined') {
-          if (licMsg) licMsg.innerHTML = '<span style="color: #f87171;">License module not loaded</span>';
+        if (!key) {
+          if (licMsg) licMsg.innerHTML = '<span style="color: #f87171;">Please enter a license key.</span>';
           return;
         }
-        const res = LicenseManager.validateKey(key);
-        if (res.valid) {
-          LicenseManager.saveLicense(res);
-          if (licMsg) licMsg.innerHTML = '<span style="color: #4ade80;">✔ License Activated Successfully!</span>';
-          setTimeout(() => {
-            updateLicenseStateUI();
-          }, 400);
-        } else {
-          if (licMsg) licMsg.innerHTML = `<span style="color: #f87171;">✖ ${res.message}</span>`;
+        if (typeof LicenseManager === 'undefined') {
+          if (licMsg) licMsg.innerHTML = '<span style="color: #f87171;">License module not loaded.</span>';
+          return;
+        }
+
+        licSubmit.disabled = true;
+        licSubmit.textContent = 'Checking...';
+        if (licMsg) licMsg.innerHTML = '<span style="color: #38bdf8;">Verifying with LicenseVault Cloud...</span>';
+
+        try {
+          const res = await LicenseManager.validateKeyAsync(key);
+          if (res.valid) {
+            LicenseManager.saveLicense(res);
+            if (licMsg) licMsg.innerHTML = '<span style="color: #4ade80;">✔ License Activated Successfully!</span>';
+            setTimeout(() => {
+              updateLicenseStateUI();
+            }, 500);
+          } else {
+            if (licMsg) licMsg.innerHTML = `<span style="color: #f87171;">✖ ${res.message}</span>`;
+          }
+        } catch (err) {
+          if (licMsg) licMsg.innerHTML = `<span style="color: #f87171;">✖ Verification error: ${err.message}</span>`;
+        } finally {
+          licSubmit.disabled = false;
+          licSubmit.textContent = '🔑 Activate';
         }
       });
     }
 
     if (deactBtn) {
       deactBtn.addEventListener('click', () => {
-        if (confirm('Are you sure you want to deactivate or change the license key on this browser?')) {
+        if (confirm('Are you sure you want to change or deactivate the license on this browser?')) {
           if (typeof LicenseManager !== 'undefined') {
             LicenseManager.removeLicense();
           }
@@ -1252,7 +1305,8 @@
           if (lockScreen) lockScreen.style.display = 'none';
           if (mainForm) mainForm.style.display = 'flex';
           if (strip) strip.style.display = 'flex';
-          if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan}</strong> (${lic.expiry})`;
+          const agencyName = lic.company ? ` • ${lic.company}` : '';
+          if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan || 'PRO'}</strong> (${lic.expiry || 'Active'})${agencyName}`;
         } else {
           if (lockScreen) lockScreen.style.display = 'flex';
           if (mainForm) mainForm.style.display = 'none';

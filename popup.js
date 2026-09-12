@@ -1,13 +1,25 @@
+/**
+ * Popup Script for HP Gas CDCMS Blocker
+ * Integrates with LicenseVault (https://licensescript.netlify.app/)
+ * Developed by Mr. Rahul Script
+ * English Only Implementation
+ */
+
 function updateLicenseUI() {
   const licBox = document.getElementById('license-box');
   const licStatusText = document.getElementById('lic-status-text');
   const licBadgeTag = document.getElementById('lic-badge-tag');
   const actForm = document.getElementById('activation-form');
+  const deviceIdEl = document.getElementById('popup-device-id');
 
-  const lic = LicenseManager.getStoredLicense();
+  if (deviceIdEl && typeof LicenseManager !== 'undefined') {
+    deviceIdEl.textContent = LicenseManager.getDeviceId();
+  }
+
+  const lic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
   if (lic && lic.valid) {
     licBox.className = 'license-badge license-active';
-    licStatusText.textContent = `🛡️ Active: ${lic.plan} (${lic.expiry})`;
+    licStatusText.textContent = `🛡️ Active: ${lic.plan || 'PRO'} (${lic.expiry || 'Active'})`;
     licBadgeTag.textContent = 'UNLOCKED';
     actForm.style.display = 'none';
   } else {
@@ -18,23 +30,56 @@ function updateLicenseUI() {
   }
 }
 
-document.getElementById('popup-activate-btn').addEventListener('click', () => {
+// Copy Device ID to clipboard
+const copyDevBtn = document.getElementById('btn-copy-device-id');
+if (copyDevBtn) {
+  copyDevBtn.addEventListener('click', () => {
+    const devId = LicenseManager.getDeviceId();
+    navigator.clipboard.writeText(devId).then(() => {
+      const orig = copyDevBtn.textContent;
+      copyDevBtn.textContent = 'Copied!';
+      setTimeout(() => { copyDevBtn.textContent = orig; }, 1200);
+    });
+  });
+}
+
+// Activate License button
+document.getElementById('popup-activate-btn').addEventListener('click', async () => {
   const input = document.getElementById('popup-lic-key');
   const key = input.value.trim();
-  const res = LicenseManager.validateKey(key);
+  const statusMsg = document.getElementById('status-msg');
+  const activateBtn = document.getElementById('popup-activate-btn');
 
-  if (res.valid) {
-    LicenseManager.saveLicense(res);
-    updateLicenseUI();
-    document.getElementById('status-msg').innerHTML = '<span style="color: #16a34a;">✔ License Activated Successfully!</span>';
-    // Notify active tab to unlock immediately
-    chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-      if (tabs[0]?.id) {
-        chrome.tabs.sendMessage(tabs[0].id, { action: 'LICENSE_UPDATED' });
-      }
-    });
-  } else {
-    document.getElementById('status-msg').innerHTML = `<span style="color: #dc2626;">✖ ${res.message}</span>`;
+  if (!key) {
+    statusMsg.innerHTML = '<span style="color: #dc2626;">Please enter a license key.</span>';
+    return;
+  }
+
+  activateBtn.disabled = true;
+  activateBtn.textContent = 'Checking...';
+  statusMsg.innerHTML = '<span style="color: #0284c7;">Verifying with LicenseVault Cloud...</span>';
+
+  try {
+    const res = await LicenseManager.validateKeyAsync(key);
+
+    if (res.valid) {
+      LicenseManager.saveLicense(res);
+      updateLicenseUI();
+      statusMsg.innerHTML = '<span style="color: #16a34a;">✔ License Activated Successfully!</span>';
+      // Notify active tab to unlock immediately
+      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
+        if (tabs[0]?.id) {
+          chrome.tabs.sendMessage(tabs[0].id, { action: 'LICENSE_UPDATED' });
+        }
+      });
+    } else {
+      statusMsg.innerHTML = `<span style="color: #dc2626;">✖ ${res.message}</span>`;
+    }
+  } catch (err) {
+    statusMsg.innerHTML = `<span style="color: #dc2626;">✖ Verification error: ${err.message}</span>`;
+  } finally {
+    activateBtn.disabled = false;
+    activateBtn.textContent = 'Activate';
   }
 });
 

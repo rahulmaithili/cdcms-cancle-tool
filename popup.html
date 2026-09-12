@@ -174,15 +174,31 @@
     <span id="lic-badge-tag" style="font-size: 10px; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px;">LOCKED</span>
   </div>
 
+  <!-- Device ID Display Pill -->
+  <div style="display: flex; align-items: center; justify-content: space-between; background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 6px; padding: 5px 8px; margin-bottom: 10px; font-size: 10.5px;">
+    <span style="color: #475569; font-weight: 600;">Device ID:</span>
+    <code id="popup-device-id" style="color: #0369a1; font-weight: 700; font-size: 10px;">LV-...</code>
+    <button id="btn-copy-device-id" style="background: none; border: 1px solid #94a3b8; border-radius: 4px; padding: 2px 6px; font-size: 9.5px; cursor: pointer; color: #334155;">Copy</button>
+  </div>
+
   <!-- Quick Activation Form (Shown if not activated) -->
-  <div id="activation-form" style="display: none; margin-bottom: 12px;">
+  <div id="activation-form" style="display: none; margin-bottom: 10px;">
     <div class="lic-input-group">
-      <input type="text" id="popup-lic-key" class="lic-input" placeholder="Paste License Key (RS-...)">
+      <input type="text" id="popup-lic-key" class="lic-input" placeholder="Paste License Key">
       <button id="popup-activate-btn" class="btn-activate">Activate</button>
+    </div>
+    <!-- LicenseVault Portal Links -->
+    <div style="display: flex; gap: 6px; margin-top: 6px;">
+      <a href="https://licensescript.netlify.app/#pricing-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #93c5fd; color: #0284c7; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600;">
+        ⚡ Get Key on LicenseVault
+      </a>
+      <a href="https://licensescript.netlify.app/#validate-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600;">
+        🔍 Verify on Web
+      </a>
     </div>
   </div>
 
-  <button id="open-panel-btn" class="btn">👉 Open Blocker Panel on Screen</button>
+  <button id="open-panel-btn" class="btn" style="margin-top: 6px;">👉 Open Blocker Panel on Screen</button>
   <div id="status-msg"></div>
 
   <div class="dev-card">
