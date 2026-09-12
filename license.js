@@ -28,13 +28,15 @@ const LicenseManager = (function() {
    */
   function getDeviceId() {
     try {
-      let id = localStorage.getItem(CONFIG.DEVICE_ID_KEY);
+      let id = (typeof localStorage !== 'undefined') ? localStorage.getItem(CONFIG.DEVICE_ID_KEY) : null;
       if (!id) {
         const randA = Math.random().toString(36).substring(2, 8).toUpperCase();
         const randB = Math.random().toString(36).substring(2, 8).toUpperCase();
         const timeHex = Date.now().toString(16).toUpperCase();
         id = `LV-${randA}-${randB}-${timeHex.slice(-6)}`;
-        localStorage.setItem(CONFIG.DEVICE_ID_KEY, id);
+        if (typeof localStorage !== 'undefined') {
+          localStorage.setItem(CONFIG.DEVICE_ID_KEY, id);
+        }
       }
       return id;
     } catch (e) {
@@ -296,34 +298,156 @@ const LicenseManager = (function() {
   }
 
   /**
-   * Retrieves stored active license.
+   * Robust date parser for all common license date formats:
+   * YYYYMMDD, YYYY-MM-DD, DD/MM/YYYY, ISO, and Lifetime.
    */
-  function getStoredLicense() {
-    try {
-      const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-      if (!data) return null;
-      const parsed = JSON.parse(data);
+  function parseExpiryDate(dateStr) {
+    if (!dateStr || typeof dateStr !== 'string') return null;
+    const s = dateStr.trim();
+    if (s === '99991231' || s.toLowerCase().includes('lifetime')) {
+      return new Date(9999, 11, 31, 23, 59, 59);
+    }
+    // Format: YYYYMMDD (e.g. 20261231)
+    if (/^\d{8}$/.test(s)) {
+      const y = parseInt(s.substring(0, 4), 10);
+      const m = parseInt(s.substring(4, 6), 10) - 1;
+      const d = parseInt(s.substring(6, 8), 10);
+      return new Date(y, m, d, 23, 59, 59);
+    }
+    // Format: DD/MM/YYYY (e.g. 31/12/2026)
+    if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
+      const parts = s.split('/');
+      const d = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const y = parseInt(parts[2], 10);
+      return new Date(y, m, d, 23, 59, 59);
+    }
+    // Format: YYYY-MM-DD (e.g. 2026-12-31)
+    if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
+      const parts = s.split('T')[0].split('-');
+      const y = parseInt(parts[0], 10);
+      const m = parseInt(parts[1], 10) - 1;
+      const d = parseInt(parts[2], 10);
+      return new Date(y, m, d, 23, 59, 59);
+    }
+    const d = new Date(s);
+    return isNaN(d.getTime()) ? null : d;
+  }
 
-      // Re-verify expiry if date is present
-      if (parsed.expiryRaw && parsed.expiryRaw !== '99991231') {
-        const year = parseInt(parsed.expiryRaw.substring(0, 4), 10);
-        const month = parseInt(parsed.expiryRaw.substring(4, 6), 10) - 1;
-        const day = parseInt(parsed.expiryRaw.substring(6, 8), 10);
-        const expiryDate = new Date(year, month, day, 23, 59, 59);
-        if (new Date() > expiryDate) {
-          return null;
-        }
-      } else if (parsed.expiry && parsed.expiry !== 'Lifetime (No Expiry)' && parsed.expiry !== 'Active') {
-        const parsedDate = new Date(parsed.expiry);
-        if (!isNaN(parsedDate.getTime()) && new Date() > parsedDate) {
-          return null;
-        }
+  /**
+   * Formats a date object as DD/MM/YYYY.
+   */
+  function formatDate(d) {
+    if (!d || !(d instanceof Date) || isNaN(d.getTime())) return '';
+    const day = String(d.getDate()).padStart(2, '0');
+    const month = String(d.getMonth() + 1).padStart(2, '0');
+    const year = d.getFullYear();
+    return `${day}/${month}/${year}`;
+  }
+
+  /**
+   * Evaluates the current license status including remaining days, expiry checks, and renewal necessity.
+   */
+  function checkLicenseStatus() {
+    try {
+      let raw = null;
+      if (typeof localStorage !== 'undefined') {
+        raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+      }
+      if (!raw) {
+        return {
+          status: 'unlicensed',
+          valid: false,
+          message: 'No license key activated. Please enter your license key to unlock.'
+        };
       }
 
-      return parsed;
+      const parsed = JSON.parse(raw);
+      if (!parsed || !parsed.key) {
+        return {
+          status: 'unlicensed',
+          valid: false,
+          message: 'Invalid license record. Please activate your license key.'
+        };
+      }
+
+      // Check if Lifetime
+      if (parsed.lifetime || parsed.expiryRaw === '99991231' || (parsed.expiry && String(parsed.expiry).toLowerCase().includes('lifetime'))) {
+        return {
+          ...parsed,
+          status: 'active',
+          valid: true,
+          lifetime: true,
+          remainingDays: 99999,
+          formattedExpiry: 'Lifetime (No Expiry)',
+          message: 'Lifetime License Active'
+        };
+      }
+
+      // Check expiry date
+      const expDate = parseExpiryDate(parsed.expiryRaw || parsed.expiry);
+      if (expDate) {
+        const now = new Date();
+        const diffMs = expDate.getTime() - now.getTime();
+        const remainingDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffMs <= 0 || remainingDays <= 0) {
+          return {
+            ...parsed,
+            status: 'expired',
+            valid: false,
+            expired: true,
+            remainingDays: 0,
+            formattedExpiry: formatDate(expDate),
+            message: `License expired on ${formatDate(expDate)}. Please renew your license on LicenseVault to continue.`
+          };
+        }
+
+        return {
+          ...parsed,
+          status: 'active',
+          valid: true,
+          expired: false,
+          remainingDays: remainingDays,
+          formattedExpiry: formatDate(expDate),
+          message: `Active License: ${remainingDays} day${remainingDays === 1 ? '' : 's'} remaining (valid till ${formatDate(expDate)})`
+        };
+      }
+
+      if (parsed.valid) {
+        return {
+          ...parsed,
+          status: 'active',
+          valid: true,
+          remainingDays: 30,
+          formattedExpiry: parsed.expiry || 'Active',
+          message: 'License Active'
+        };
+      }
+
+      return {
+        status: 'unlicensed',
+        valid: false,
+        message: 'Please activate a valid License Key to unlock the tool.'
+      };
     } catch (e) {
-      return null;
+      return {
+        status: 'unlicensed',
+        valid: false,
+        message: 'Failed to read license info. Please re-activate your key.'
+      };
     }
+  }
+
+  /**
+   * Retrieves stored active license. Returns object ONLY if active and not expired.
+   */
+  function getStoredLicense() {
+    const status = checkLicenseStatus();
+    if (status && status.valid && status.status === 'active') {
+      return status;
+    }
+    return null;
   }
 
   /**
@@ -336,7 +460,9 @@ const LicenseManager = (function() {
         lastVerifiedAt: Date.now(),
         deviceId: getDeviceId()
       };
-      localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(payload));
+      if (typeof localStorage !== 'undefined') {
+        localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(payload));
+      }
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ [CONFIG.STORAGE_KEY]: payload });
       }
@@ -348,7 +474,9 @@ const LicenseManager = (function() {
    */
   function removeLicense() {
     try {
-      localStorage.removeItem(CONFIG.STORAGE_KEY);
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(CONFIG.STORAGE_KEY);
+      }
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.remove([CONFIG.STORAGE_KEY]);
       }
@@ -363,9 +491,12 @@ const LicenseManager = (function() {
     validateOfflineKey,
     verifyOnline,
     createLicenseKey,
+    checkLicenseStatus,
     getStoredLicense,
     saveLicense,
-    removeLicense
+    removeLicense,
+    parseExpiryDate,
+    formatDate
   };
 })();
 

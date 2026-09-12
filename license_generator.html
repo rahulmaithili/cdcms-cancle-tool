@@ -185,13 +185,23 @@
     <div class="form-group">
       <label>Validity Duration:</label>
       <select id="validity-select">
-        <option value="30">1 Month (30 Days)</option>
+        <option value="1">1 Day (Quick Demo / Testing)</option>
+        <option value="3">3 Days (Trial Period)</option>
+        <option value="7">7 Days (1 Week)</option>
+        <option value="15">15 Days (Half Month)</option>
+        <option value="30" selected>1 Month (30 Days)</option>
         <option value="90">3 Months (90 Days)</option>
         <option value="180">6 Months (180 Days)</option>
-        <option value="365" selected>1 Year (365 Days)</option>
+        <option value="365">1 Year (365 Days)</option>
         <option value="730">2 Years (730 Days)</option>
+        <option value="CUSTOM">Custom Days...</option>
         <option value="LIFETIME">Lifetime (No Expiry)</option>
       </select>
+    </div>
+
+    <div class="form-group" id="custom-days-group" style="display: none;">
+      <label>Enter Custom Number of Days:</label>
+      <input type="number" id="custom-days-input" min="1" max="3650" placeholder="e.g. 5" value="5">
     </div>
 
     <button id="generate-btn" class="btn">
@@ -223,6 +233,10 @@
 
   <script src="license.js"></script>
   <script>
+    document.getElementById('validity-select').addEventListener('change', (e) => {
+      document.getElementById('custom-days-group').style.display = e.target.value === 'CUSTOM' ? 'block' : 'none';
+    });
+
     document.getElementById('generate-btn').addEventListener('click', () => {
       const clientName = document.getElementById('client-name').value.trim() || 'Valued Client';
       const plan = document.getElementById('plan-select').value;
@@ -232,7 +246,10 @@
       let expiryDisplay = 'Lifetime';
 
       if (validity !== 'LIFETIME') {
-        const days = parseInt(validity, 10);
+        let days = parseInt(validity, 10);
+        if (validity === 'CUSTOM') {
+          days = parseInt(document.getElementById('custom-days-input').value, 10) || 1;
+        }
         const exp = new Date();
         exp.setDate(exp.getDate() + days);
 
@@ -240,7 +257,7 @@
         const m = String(exp.getMonth() + 1).padStart(2, '0');
         const d = String(exp.getDate()).padStart(2, '0');
         expiryDateStr = `${y}${m}${d}`;
-        expiryDisplay = `${d}/${m}/${y}`;
+        expiryDisplay = `${d}/${m}/${y} (${days} days)`;
       }
 
       const key = LicenseManager.createLicenseKey(plan, expiryDateStr);

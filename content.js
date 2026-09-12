@@ -540,6 +540,7 @@
 
     // Toggle Open/Close
     launcher.addEventListener('click', () => {
+      updateLicenseStateUI();
       launcher.style.display = 'none';
       panel.style.display = 'flex';
       localStorage.setItem('cdcms_blocker_minimized', 'false');
@@ -582,22 +583,42 @@
       const strip = document.getElementById('cdcms-license-strip');
       const stripText = document.getElementById('cdcms-strip-text');
       const deviceIdEl = document.getElementById('cdcms-lock-device-id');
+      const lockTitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-title') : null;
+      const lockSubtitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-subtitle') : null;
+      const launcherLabel = document.getElementById('cdcms-launcher-label');
 
       if (deviceIdEl && typeof LicenseManager !== 'undefined') {
         deviceIdEl.textContent = LicenseManager.getDeviceId();
       }
 
-      const lic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
-      if (lic && lic.valid) {
+      const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
+
+      if (licStatus && licStatus.valid && licStatus.status === 'active') {
+        // ACTIVE STATE: Unlock cancel/block page
         if (lockScreen) lockScreen.style.display = 'none';
         if (mainForm) mainForm.style.display = 'flex';
         if (strip) strip.style.display = 'flex';
-        const agencyName = lic.company ? ` • ${lic.company}` : '';
-        if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan || 'PRO'}</strong> (${lic.expiry || 'Active'})${agencyName}`;
-      } else {
+        const agencyName = licStatus.company ? ` • ${licStatus.company}` : '';
+        const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays} days left - till ${licStatus.formattedExpiry}`;
+        if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
+        if (launcherLabel) launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
+      } else if (licStatus && licStatus.status === 'expired') {
+        // EXPIRED STATE: Lock completely and prompt to renew
         if (lockScreen) lockScreen.style.display = 'flex';
         if (mainForm) mainForm.style.display = 'none';
         if (strip) strip.style.display = 'none';
+        if (lockTitle) lockTitle.innerHTML = '<span style="color: #ef4444;">⚠️ License Expired</span>';
+        if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">Your access expired on <strong>${licStatus.formattedExpiry}</strong>.<br>Please renew your subscription on LicenseVault or contact Mr. Rahul Script to continue.</span>`;
+        if (launcherLabel) launcherLabel.textContent = '⚠️ License Expired';
+        stopAutomation();
+      } else {
+        // UNLICENSED STATE: Keep locked
+        if (lockScreen) lockScreen.style.display = 'flex';
+        if (mainForm) mainForm.style.display = 'none';
+        if (strip) strip.style.display = 'none';
+        if (lockTitle) lockTitle.textContent = 'License Activation Required';
+        if (lockSubtitle) lockSubtitle.textContent = 'Please enter your LicenseVault key to unlock bulk blocking for this agency.';
+        if (launcherLabel) launcherLabel.textContent = '🔒 Activate License';
       }
     }
 
@@ -671,6 +692,11 @@
 
     // Draggable header
     makeDraggable(document.getElementById('cdcms-panel-drag'), document.getElementById('cdcms-blocker-root'));
+
+    // Periodically check license status and auto-lock if expired
+    setInterval(() => {
+      updateLicenseStateUI();
+    }, 15000);
 
     // Check if there was an ongoing job that needs to resume after page reload!
     setTimeout(() => {
@@ -1300,17 +1326,31 @@
         const mainForm = document.getElementById('cdcms-main-form');
         const strip = document.getElementById('cdcms-license-strip');
         const stripText = document.getElementById('cdcms-strip-text');
-        const lic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
-        if (lic && lic.valid) {
+        const lockTitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-title') : null;
+        const lockSubtitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-subtitle') : null;
+        const launcherLabel = document.getElementById('cdcms-launcher-label');
+
+        const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
+        if (licStatus && licStatus.valid && licStatus.status === 'active') {
           if (lockScreen) lockScreen.style.display = 'none';
           if (mainForm) mainForm.style.display = 'flex';
           if (strip) strip.style.display = 'flex';
-          const agencyName = lic.company ? ` • ${lic.company}` : '';
-          if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${lic.plan || 'PRO'}</strong> (${lic.expiry || 'Active'})${agencyName}`;
+          const agencyName = licStatus.company ? ` • ${licStatus.company}` : '';
+          const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays} days left - till ${licStatus.formattedExpiry}`;
+          if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
+          if (launcherLabel) launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
+        } else if (licStatus && licStatus.status === 'expired') {
+          if (lockScreen) lockScreen.style.display = 'flex';
+          if (mainForm) mainForm.style.display = 'none';
+          if (strip) strip.style.display = 'none';
+          if (lockTitle) lockTitle.innerHTML = '<span style="color: #ef4444;">⚠️ License Expired</span>';
+          if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">Your access expired on <strong>${licStatus.formattedExpiry}</strong>.<br>Please renew your subscription on LicenseVault or contact Mr. Rahul Script to continue.</span>`;
+          if (launcherLabel) launcherLabel.textContent = '⚠️ License Expired';
         } else {
           if (lockScreen) lockScreen.style.display = 'flex';
           if (mainForm) mainForm.style.display = 'none';
           if (strip) strip.style.display = 'none';
+          if (launcherLabel) launcherLabel.textContent = '🔒 Activate License';
         }
         sendResponse({ status: 'ok' });
       }

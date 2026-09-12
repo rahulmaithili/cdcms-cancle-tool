@@ -16,16 +16,29 @@ function updateLicenseUI() {
     deviceIdEl.textContent = LicenseManager.getDeviceId();
   }
 
-  const lic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
-  if (lic && lic.valid) {
+  const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
+
+  if (licStatus && licStatus.valid && licStatus.status === 'active') {
     licBox.className = 'license-badge license-active';
-    licStatusText.textContent = `🛡️ Active: ${lic.plan || 'PRO'} (${lic.expiry || 'Active'})`;
+    const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays}d left (${licStatus.formattedExpiry})`;
+    licStatusText.textContent = `🛡️ Active: ${licStatus.plan || 'PRO'} • ${remainingStr}`;
     licBadgeTag.textContent = 'UNLOCKED';
+    licBadgeTag.style.background = 'rgba(16, 185, 129, 0.2)';
+    licBadgeTag.style.color = '#065f46';
     actForm.style.display = 'none';
+  } else if (licStatus && licStatus.status === 'expired') {
+    licBox.className = 'license-badge license-locked';
+    licStatusText.textContent = `⚠️ Expired on ${licStatus.formattedExpiry}! Please Renew`;
+    licBadgeTag.textContent = 'EXPIRED';
+    licBadgeTag.style.background = '#dc2626';
+    licBadgeTag.style.color = '#ffffff';
+    actForm.style.display = 'block';
   } else {
     licBox.className = 'license-badge license-locked';
     licStatusText.textContent = '🔒 License Required to Use';
     licBadgeTag.textContent = 'LOCKED';
+    licBadgeTag.style.background = 'rgba(0, 0, 0, 0.1)';
+    licBadgeTag.style.color = '#991b1b';
     actForm.style.display = 'block';
   }
 }
