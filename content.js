@@ -340,26 +340,26 @@
             <button id="cdcms-deactivate-btn" class="cdcms-lic-btn-change">Change Key</button>
           </div>
 
-          <!-- GitHub Version & Live Update Bar (Always Visible) -->
+          <!-- Software Version & Live Update Bar (Always Visible) -->
           <div id="cdcms-github-bar" class="cdcms-github-bar">
             <div class="cdcms-gh-info">
-              <span class="cdcms-gh-tag" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.GITHUB} GitHub:</span>
+              <span class="cdcms-gh-tag">Version:</span>
               <span id="cdcms-gh-cur-ver" class="cdcms-gh-ver">v1.0.0</span>
               <span id="cdcms-gh-status-text" class="cdcms-gh-status-text">• Up to date</span>
             </div>
             <div class="cdcms-gh-btns">
-              <button type="button" id="cdcms-check-gh-btn" class="cdcms-gh-btn" title="Check GitHub for latest release" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.REFRESH} Check Update</button>
+              <button type="button" id="cdcms-check-gh-btn" class="cdcms-gh-btn" title="Check for latest update" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.REFRESH} Check Update</button>
             </div>
           </div>
 
-          <!-- GitHub Auto-Update Notification Banner (Appears when new version found) -->
+          <!-- Auto-Update Notification Banner (Appears when new version found) -->
           <div id="cdcms-update-banner" class="cdcms-update-alert" style="display: none;">
             <div class="cdcms-update-alert-content">
               <span><strong>New Version <span id="cdcms-update-ver-label">v1.0.1</span> Available!</strong></span>
-              <div style="font-size: 10px; opacity: 0.9; margin-top: 2px;">Visit repository to update or run update.bat.</div>
+              <div style="font-size: 10px; opacity: 0.9; margin-top: 2px;">Run update.bat in your tool folder to update.</div>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" class="cdcms-update-repo-btn" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.GITHUB} View on GitHub</a>
+              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip" class="cdcms-update-dl-btn" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.DOWNLOAD} Download Update</a>
             </div>
           </div>
 
@@ -1538,10 +1538,10 @@
     if (isManual) {
       if (btn) {
         btn.disabled = true;
-        btn.textContent = '⏳ Checking...';
+        btn.innerHTML = `${ICONS.REFRESH} Checking...`;
       }
       if (statusText) {
-        statusText.textContent = '• Checking GitHub...';
+        statusText.textContent = '• Checking updates...';
         statusText.style.color = '#0284c7';
       }
     }

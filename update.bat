@@ -2,8 +2,7 @@
 title HP Gas CDCMS Blocker - GitHub Auto Updater
 color 0b
 echo ========================================================
-echo   HP Gas CDCMS Blocker - Auto Update from GitHub
-echo   Repository: rahulmaithili/cdcms-cancle-tool
+echo   HP Gas CDCMS Blocker - Automatic System Updater
 echo ========================================================
 echo.
 
@@ -12,17 +11,17 @@ cd /d "%~dp0"
 where git >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     if exist ".git" (
-        echo [*] Git repository detected. Pulling latest updates from GitHub...
+        echo [*] Pulling latest software updates...
         git pull origin main
         goto finished
     )
 )
 
-echo [*] Downloading latest release from GitHub...
+echo [*] Downloading latest release package...
 powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip' -OutFile 'update_temp.zip'"
 
 if not exist "update_temp.zip" (
-    echo [ERROR] Failed to download update from GitHub. Please check your internet connection.
+    echo [ERROR] Failed to download update. Please check your internet connection.
     pause
     exit /b 1
 )
@@ -33,7 +32,7 @@ powershell -Command "Expand-Archive -Path 'update_temp.zip' -DestinationPath 'up
 :finished
 echo.
 echo ========================================================
-echo   [SUCCESS] Updated to the latest GitHub version!
+echo   [SUCCESS] Updated to the latest version successfully!
 echo   Next Step: Open chrome://extensions/ in Chrome and
 echo   click the reload (circle arrow) icon on this tool.
 echo ========================================================

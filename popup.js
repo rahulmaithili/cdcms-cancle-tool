@@ -159,6 +159,21 @@ function compareVersions(v1, v2) {
   return 0;
 }
 
+function downloadUpdateZip() {
+  const downloadUrl = 'https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip';
+  const a = document.createElement('a');
+  a.href = downloadUrl;
+  a.download = 'cdcms-blocker-update.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+}
+
+const bannerUpdateBtn = document.getElementById('popup-banner-update-btn');
+if (bannerUpdateBtn) {
+  bannerUpdateBtn.addEventListener('click', downloadUpdateZip);
+}
+
 async function checkGitHubUpdates() {
   try {
     const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
@@ -197,10 +212,10 @@ async function manualCheckPopupUpdate() {
   if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
   if (btn) {
     btn.disabled = true;
-    btn.textContent = 'Checking...';
+    btn.innerHTML = `${ICONS.REFRESH} Checking...`;
   }
   if (msg) {
-    msg.textContent = 'Contacting GitHub server...';
+    msg.textContent = 'Checking for updates...';
     msg.style.color = '#0284c7';
   }
 
@@ -212,7 +227,20 @@ async function manualCheckPopupUpdate() {
 
     if (compareVersions(remoteVersion, currentVersion) > 0) {
       if (msg) {
-        msg.innerHTML = `<span style="color: #16a34a; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} New Version v${remoteVersion} Available! Visit GitHub repo to update.</span>`;
+        msg.innerHTML = `
+          <div style="color: #16a34a; font-weight: 700; margin-bottom: 5px;">
+            ${ICONS.CHECK} New Version v${remoteVersion} Available!
+          </div>
+          <button id="popup-dl-update-btn" style="width: 100%; background: #16a34a; color: white; border: none; padding: 6px; border-radius: 5px; font-weight: 600; font-size: 11px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 5px;">
+            <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download Update Package
+          </button>
+          <div style="font-size: 9.5px; color: #64748b; margin-top: 4px; text-align: center;">
+            Or run <b>update.bat</b> in your extension folder
+          </div>
+        `;
+        const dlBtn = document.getElementById('popup-dl-update-btn');
+        if (dlBtn) dlBtn.addEventListener('click', downloadUpdateZip);
       }
       if (banner) banner.style.display = 'flex';
       if (verLabel) verLabel.textContent = `v${remoteVersion}`;

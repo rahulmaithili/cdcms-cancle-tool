@@ -173,10 +173,10 @@
     </div>
   </div>
 
-  <!-- GitHub Auto-Update Notification Banner -->
+  <!-- Auto-Update Notification Banner -->
   <div id="popup-update-banner" style="display: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; padding: 7px 10px; font-size: 11px; border-radius: 6px; margin-bottom: 10px; align-items: center; justify-content: space-between;">
     <span><b>Update Available (<span id="popup-update-version"></span>)!</b></span>
-    <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" style="background: #ffffff; color: #4f46e5; padding: 2px 7px; border-radius: 4px; font-weight: 700; text-decoration: none; font-size: 10px;">Update</a>
+    <button id="popup-banner-update-btn" style="background: #ffffff; color: #4f46e5; border: none; padding: 3px 8px; border-radius: 4px; font-weight: 700; cursor: pointer; font-size: 10px;">Download Update</button>
   </div>
 
   <!-- License Status Box -->
@@ -217,25 +217,18 @@
   </button>
   <div id="status-msg"></div>
 
-  <!-- GitHub Version & Live Update Card -->
+  <!-- Software Version & Update Card -->
   <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 11px;">
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <span style="font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 5px;">
-        <svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub Version: <code id="popup-cur-ver" style="color: #0284c7; font-weight: 700;">v1.0.0</code>
+        Version: <code id="popup-cur-ver" style="color: #0284c7; font-weight: 700;">v1.0.0</code>
       </span>
-      <button id="popup-check-update-btn" style="background: #0284c7; color: #ffffff; border: none; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+      <button id="popup-check-update-btn" style="background: #0284c7; color: #ffffff; border: none; border-radius: 4px; padding: 4px 10px; font-size: 10.5px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
         <svg class="cdcms-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
         Check Update
       </button>
     </div>
-    <div id="popup-gh-msg" style="font-size: 10px; color: #64748b; margin-top: 4px;">Live version checked directly against repository</div>
-    <div style="display: flex; gap: 6px; margin-top: 6px;">
-      <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #ffffff; border: 1px solid #94a3b8; color: #475569; padding: 4px; border-radius: 5px; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
-        GitHub Repository
-      </a>
-    </div>
+    <div id="popup-gh-msg" style="font-size: 10px; color: #64748b; margin-top: 4px; min-height: 14px;"></div>
   </div>
 
   <div class="dev-card">
