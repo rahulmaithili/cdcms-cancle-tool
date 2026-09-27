@@ -5,6 +5,15 @@
  * English Only Implementation
  */
 
+const ICONS = {
+  SHIELD: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>',
+  ALERT: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  LOCK: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+  CHECK: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>',
+  CLOSE: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+  REFRESH: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>'
+};
+
 function updateLicenseUI() {
   const licBox = document.getElementById('license-box');
   const licStatusText = document.getElementById('lic-status-text');
@@ -21,21 +30,21 @@ function updateLicenseUI() {
   if (licStatus && licStatus.valid && licStatus.status === 'active') {
     licBox.className = 'license-badge license-active';
     const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays}d left (${licStatus.formattedExpiry})`;
-    licStatusText.textContent = `🛡️ Active: ${licStatus.plan || 'PRO'} • ${remainingStr}`;
+    licStatusText.innerHTML = `${ICONS.SHIELD} Active: ${licStatus.plan || 'PRO'} • ${remainingStr}`;
     licBadgeTag.textContent = 'UNLOCKED';
     licBadgeTag.style.background = 'rgba(16, 185, 129, 0.2)';
     licBadgeTag.style.color = '#065f46';
     actForm.style.display = 'none';
   } else if (licStatus && licStatus.status === 'expired') {
     licBox.className = 'license-badge license-locked';
-    licStatusText.textContent = `⚠️ Expired on ${licStatus.formattedExpiry}! Please Renew`;
+    licStatusText.innerHTML = `${ICONS.ALERT} Expired on ${licStatus.formattedExpiry}! Please Renew`;
     licBadgeTag.textContent = 'EXPIRED';
     licBadgeTag.style.background = '#dc2626';
     licBadgeTag.style.color = '#ffffff';
     actForm.style.display = 'block';
   } else {
     licBox.className = 'license-badge license-locked';
-    licStatusText.textContent = '🔒 License Required to Use';
+    licStatusText.innerHTML = `${ICONS.LOCK} License Required to Use`;
     licBadgeTag.textContent = 'LOCKED';
     licBadgeTag.style.background = 'rgba(0, 0, 0, 0.1)';
     licBadgeTag.style.color = '#991b1b';
@@ -78,7 +87,7 @@ document.getElementById('popup-activate-btn').addEventListener('click', async ()
     if (res.valid) {
       LicenseManager.saveLicense(res);
       updateLicenseUI();
-      statusMsg.innerHTML = '<span style="color: #16a34a;">✔ License Activated Successfully!</span>';
+      statusMsg.innerHTML = `<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} License Activated Successfully!</span>`;
       // Notify all tabs to unlock immediately
       chrome.tabs.query({}, (tabs) => {
         tabs.forEach(t => {
@@ -88,10 +97,10 @@ document.getElementById('popup-activate-btn').addEventListener('click', async ()
         });
       });
     } else {
-      statusMsg.innerHTML = `<span style="color: #dc2626;">✖ ${res.message}</span>`;
+      statusMsg.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} ${res.message}</span>`;
     }
   } catch (err) {
-    statusMsg.innerHTML = `<span style="color: #dc2626;">✖ Verification error: ${err.message}</span>`;
+    statusMsg.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} Verification error: ${err.message}</span>`;
   } finally {
     activateBtn.disabled = false;
     activateBtn.textContent = 'Activate';
@@ -203,24 +212,24 @@ async function manualCheckPopupUpdate() {
 
     if (compareVersions(remoteVersion, currentVersion) > 0) {
       if (msg) {
-        msg.innerHTML = `<span style="color: #16a34a; font-weight: 700;">🎉 New Version v${remoteVersion} Available! Click Download ZIP below.</span>`;
+        msg.innerHTML = `<span style="color: #16a34a; font-weight: 700; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} New Version v${remoteVersion} Available! Visit GitHub repo to update.</span>`;
       }
       if (banner) banner.style.display = 'flex';
       if (verLabel) verLabel.textContent = `v${remoteVersion}`;
     } else {
       if (msg) {
-        msg.innerHTML = `<span style="color: #16a34a; font-weight: 600;">✔ You have the latest version (v${currentVersion}) installed!</span>`;
+        msg.innerHTML = `<span style="color: #16a34a; font-weight: 600; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} You have the latest version (v${currentVersion}) installed!</span>`;
       }
       if (banner) banner.style.display = 'none';
     }
   } catch (err) {
     if (msg) {
-      msg.innerHTML = `<span style="color: #dc2626;">Check failed: Check internet connection.</span>`;
+      msg.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} Check failed: Check internet connection.</span>`;
     }
   } finally {
     if (btn) {
       btn.disabled = false;
-      btn.textContent = '🔄 Check';
+      btn.innerHTML = `${ICONS.REFRESH} Check Update`;
     }
   }
 }

@@ -157,6 +157,11 @@
       border: 1px solid #2563eb;
       color: #93c5fd;
     }
+    .cdcms-icon {
+      display: inline-block;
+      vertical-align: -0.15em;
+      flex-shrink: 0;
+    }
   </style>
 </head>
 <body>
@@ -170,13 +175,13 @@
 
   <!-- GitHub Auto-Update Notification Banner -->
   <div id="popup-update-banner" style="display: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; padding: 7px 10px; font-size: 11px; border-radius: 6px; margin-bottom: 10px; align-items: center; justify-content: space-between;">
-    <span>🚀 <b>Update Available (<span id="popup-update-version"></span>)!</b></span>
+    <span><b>Update Available (<span id="popup-update-version"></span>)!</b></span>
     <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" style="background: #ffffff; color: #4f46e5; padding: 2px 7px; border-radius: 4px; font-weight: 700; text-decoration: none; font-size: 10px;">Update</a>
   </div>
 
   <!-- License Status Box -->
   <div id="license-box" class="license-badge license-locked">
-    <span id="lic-status-text">🔒 Checking License...</span>
+    <span id="lic-status-text">Checking License...</span>
     <span id="lic-badge-tag" style="font-size: 10px; background: rgba(0,0,0,0.1); padding: 2px 6px; border-radius: 4px;">LOCKED</span>
   </div>
 
@@ -195,50 +200,60 @@
     </div>
     <!-- LicenseVault Portal Links -->
     <div style="display: flex; gap: 6px; margin-top: 6px;">
-      <a href="https://licensescript.netlify.app/#pricing-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #93c5fd; color: #0284c7; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600;">
-        ⚡ Get Key on LicenseVault
+      <a href="https://licensescript.netlify.app/#pricing-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #93c5fd; color: #0284c7; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Get on LicenseVault
       </a>
-      <a href="https://licensescript.netlify.app/#validate-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600;">
-        🔍 Verify on Web
+      <a href="https://licensescript.netlify.app/#validate-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Verify on Web
       </a>
     </div>
   </div>
 
-  <button id="open-panel-btn" class="btn" style="margin-top: 6px;">👉 Open Blocker Panel on Screen</button>
+  <button id="open-panel-btn" class="btn" style="margin-top: 6px; display: flex; align-items: center; justify-content: center; gap: 6px;">
+    <svg class="cdcms-icon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+    Open Blocker Panel on Screen
+  </button>
   <div id="status-msg"></div>
 
   <!-- GitHub Version & Live Update Card -->
   <div style="background: #f1f5f9; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px 10px; margin-top: 10px; font-size: 11px;">
     <div style="display: flex; align-items: center; justify-content: space-between;">
       <span style="font-weight: 700; color: #0f172a; display: flex; align-items: center; gap: 5px;">
-        <span>🐙</span> GitHub Version: <code id="popup-cur-ver" style="color: #0284c7; font-weight: 700;">v1.0.0</code>
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub Version: <code id="popup-cur-ver" style="color: #0284c7; font-weight: 700;">v1.0.0</code>
       </span>
-      <button id="popup-check-update-btn" style="background: #0284c7; color: #ffffff; border: none; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; cursor: pointer;">🔄 Check</button>
+      <button id="popup-check-update-btn" style="background: #0284c7; color: #ffffff; border: none; border-radius: 4px; padding: 3px 8px; font-size: 10px; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 4px;">
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+        Check Update
+      </button>
     </div>
-    <div id="popup-gh-msg" style="font-size: 10px; color: #64748b; margin-top: 4px;">Direct update available from GitHub</div>
+    <div id="popup-gh-msg" style="font-size: 10px; color: #64748b; margin-top: 4px;">Live version checked directly against repository</div>
     <div style="display: flex; gap: 6px; margin-top: 6px;">
-      <a href="https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #ffffff; border: 1px solid #0284c7; color: #0284c7; padding: 4px; border-radius: 5px; font-size: 10px; font-weight: 700;">
-        📥 Direct Download ZIP
-      </a>
-      <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #ffffff; border: 1px solid #94a3b8; color: #475569; padding: 4px; border-radius: 5px; font-size: 10px; font-weight: 600;">
-        📂 GitHub Repo
+      <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #ffffff; border: 1px solid #94a3b8; color: #475569; padding: 4px; border-radius: 5px; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        GitHub Repository
       </a>
     </div>
   </div>
 
   <div class="dev-card">
     <div class="dev-badge">
-      <span>👤</span> Developed by <strong>Mr. Rahul Script</strong>
+      <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      Developed by <strong>Mr. Rahul Script</strong>
     </div>
     <div style="font-size: 9.5px; color: #a7f3d0; margin-top: 5px; line-height: 1.3;">
       Official Copyright & Technical Support • Business Automation Solutions
     </div>
     <div class="contact-pills">
       <a href="https://wa.me/917564948617" target="_blank" class="pill pill-wa">
-        💬 WhatsApp: +917564948617
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.711 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>
+        WhatsApp: +917564948617
       </a>
       <a href="mailto:life.rahulg@gmail.com" class="pill pill-mail">
-        ✉ Email
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+        Email
       </a>
     </div>
   </div>

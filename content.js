@@ -239,6 +239,32 @@
     syncPageReasonOptions();
   }
 
+  // Premium SVG Icons map (Lightweight vector icons replacing emojis)
+  const ICONS = {
+    BOLT: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
+    PLAY: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg>',
+    PAUSE: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
+    STOP: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>',
+    RESET: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+    DOWNLOAD: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
+    COPY: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
+    GITHUB: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>',
+    REFRESH: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>',
+    SHIELD: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/><polyline points="9 12 11 14 15 10"/></svg>',
+    LOCK: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>',
+    ALERT: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+    KEY: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 2l-2 2m-1.5 1.5L14 9l-2-2-4 4 2 2-5 5a2.12 2.12 0 0 0 3 3l5-5 2 2 4-4-2-2 3.5-3.5z"/></svg>',
+    USER: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>',
+    WHATSAPP: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.888 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L0 24l6.335-1.662c1.746.953 3.71 1.456 5.711 1.457h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413Z"/></svg>',
+    MAIL: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>',
+    SEARCH: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>',
+    EXTERNAL: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
+    CHEVRON_UP: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="18 15 12 9 6 15"/></svg>',
+    CLOSE: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>',
+    MINUS: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="5" y1="12" x2="19" y2="12"/></svg>',
+    CHECK: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>'
+  };
+
   // Build Floating UI Panel
   function createUI(forceOpen = false) {
     // Only open on Block Consumer screen unless explicitly requested by user
@@ -284,12 +310,12 @@
           <div class="cdcms-dock-sub">MR.RAHUL SCRIPTS</div>
           <div class="cdcms-dock-main">
             ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-launcher-logo" alt="RS" />` : ''}
-            <span id="cdcms-launcher-label">⚡ CDCMS Auto-Blocker</span>
+            <span id="cdcms-launcher-label">${ICONS.BOLT} CDCMS Auto-Blocker</span>
           </div>
         </div>
         <div class="cdcms-dock-actions">
-          <span class="cdcms-dock-chevron" title="Click to expand">▲</span>
-          <span id="cdcms-launcher-close" title="Close completely (Hide from screen)">✕</span>
+          <span class="cdcms-dock-chevron" title="Click to expand">${ICONS.CHEVRON_UP}</span>
+          <span id="cdcms-launcher-close" title="Close completely (Hide from screen)">${ICONS.CLOSE}</span>
         </div>
       </div>
 
@@ -297,45 +323,43 @@
         <div class="cdcms-panel-header" id="cdcms-panel-drag">
           <div class="cdcms-header-title">
             ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-logo-icon" alt="RS" />` : ''}
-            <span>⚡ HP Gas CDCMS Blocker</span>
+            <span>HP Gas CDCMS Blocker</span>
             <span class="cdcms-badge">CM-16</span>
             <span class="cdcms-badge" id="cdcms-ver-badge" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 10px;" title="Extension Version">v1.0.0</span>
           </div>
           <div class="cdcms-header-actions">
-            <button class="cdcms-btn-icon" id="cdcms-min-btn" title="Minimize to bottom badge">─</button>
-            <button class="cdcms-btn-icon" id="cdcms-close-btn" title="Close completely (Hide from page)" style="font-weight: bold; font-size: 14px; margin-left: 4px; color: #f87171;">✕</button>
+            <button class="cdcms-btn-icon" id="cdcms-min-btn" title="Minimize to bottom badge">${ICONS.MINUS}</button>
+            <button class="cdcms-btn-icon" id="cdcms-close-btn" title="Close completely (Hide from page)" style="font-weight: bold; font-size: 14px; margin-left: 4px; color: #f87171;">${ICONS.CLOSE}</button>
           </div>
         </div>
 
         <div class="cdcms-panel-body">
           <!-- License Status Strip -->
           <div id="cdcms-license-strip" class="cdcms-license-strip" style="display: none;">
-            <span id="cdcms-strip-text">🛡️ License: Checking...</span>
+            <span id="cdcms-strip-text">${ICONS.SHIELD} License: Checking...</span>
             <button id="cdcms-deactivate-btn" class="cdcms-lic-btn-change">Change Key</button>
           </div>
 
           <!-- GitHub Version & Live Update Bar (Always Visible) -->
           <div id="cdcms-github-bar" class="cdcms-github-bar">
             <div class="cdcms-gh-info">
-              <span class="cdcms-gh-tag">🐙 GitHub:</span>
+              <span class="cdcms-gh-tag" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.GITHUB} GitHub:</span>
               <span id="cdcms-gh-cur-ver" class="cdcms-gh-ver">v1.0.0</span>
               <span id="cdcms-gh-status-text" class="cdcms-gh-status-text">• Up to date</span>
             </div>
             <div class="cdcms-gh-btns">
-              <button type="button" id="cdcms-check-gh-btn" class="cdcms-gh-btn" title="Check GitHub for latest release">🔄 Check</button>
-              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip" target="_blank" class="cdcms-gh-btn cdcms-gh-btn-zip" title="Direct Download latest ZIP from GitHub">📥 ZIP</a>
+              <button type="button" id="cdcms-check-gh-btn" class="cdcms-gh-btn" title="Check GitHub for latest release" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.REFRESH} Check Update</button>
             </div>
           </div>
 
           <!-- GitHub Auto-Update Notification Banner (Appears when new version found) -->
           <div id="cdcms-update-banner" class="cdcms-update-alert" style="display: none;">
             <div class="cdcms-update-alert-content">
-              <span>🚀 <strong>New Version <span id="cdcms-update-ver-label">v1.0.1</span> Available!</strong></span>
-              <div style="font-size: 10px; opacity: 0.9; margin-top: 2px;">Click Direct Download below, then extract files or run update.bat.</div>
+              <span><strong>New Version <span id="cdcms-update-ver-label">v1.0.1</span> Available!</strong></span>
+              <div style="font-size: 10px; opacity: 0.9; margin-top: 2px;">Visit repository to update or run update.bat.</div>
             </div>
             <div style="display: flex; gap: 6px; align-items: center;">
-              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip" target="_blank" class="cdcms-update-dl-btn">📥 Download ZIP</a>
-              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" class="cdcms-update-repo-btn">📂 Repo</a>
+              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" class="cdcms-update-repo-btn" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.GITHUB} View on GitHub</a>
             </div>
           </div>
 
@@ -353,21 +377,21 @@
 
             <div class="cdcms-lock-input-wrap">
               <input type="text" id="cdcms-license-input" class="cdcms-lock-input" placeholder="Paste License Key" />
-              <button id="cdcms-license-submit" class="cdcms-lock-btn">🔑 Activate</button>
+              <button id="cdcms-license-submit" class="cdcms-lock-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px;">${ICONS.KEY} Activate</button>
             </div>
             <div id="cdcms-license-msg" class="cdcms-lock-status"></div>
 
             <div style="display: flex; gap: 8px; width: 100%; margin-top: 10px;">
               <a href="https://licensescript.netlify.app/#pricing-section" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(2, 132, 199, 0.2); border: 1px solid #0284c7; color: #38bdf8; font-size: 11px;">
-                <span>⚡</span> Get on LicenseVault
+                ${ICONS.EXTERNAL} Get on LicenseVault
               </a>
               <a href="https://licensescript.netlify.app/#validate-section" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; font-size: 11px;">
-                <span>🔍</span> Verify on Web
+                ${ICONS.SEARCH} Verify on Web
               </a>
             </div>
 
             <a href="https://wa.me/917564948617?text=Hello%20Mr.%20Rahul%20Script,%20I%20need%20a%20License%20Key%20for%20HP%20Gas%20CDCMS%20Blocker" target="_blank" class="cdcms-lock-wa-btn" style="margin-top: 8px; width: 100%; box-sizing: border-box; justify-content: center;">
-              <span>💬</span> WhatsApp Support (+917564948617)
+              ${ICONS.WHATSAPP} WhatsApp Support (+917564948617)
             </a>
           </div>
 
@@ -378,7 +402,7 @@
                 <span>Consumer Numbers (Paste List)</span>
                 <div style="display: flex; align-items: center; gap: 8px;">
                   <span id="cdcms-total-count" style="color: #0284c7;">0 numbers</span>
-                  <button type="button" id="cdcms-quick-clear-btn" class="cdcms-clear-link" title="Clear text and reset for new batch">✕ Clear Box</button>
+                  <button type="button" id="cdcms-quick-clear-btn" class="cdcms-clear-link" title="Clear text and reset for new batch" style="display: inline-flex; align-items: center; gap: 3px;">${ICONS.CLOSE} Clear Box</button>
                 </div>
               </div>
               <textarea id="cdcms-consumer-list" class="cdcms-textarea" placeholder="Paste Consumer Numbers here (one per line, comma or space separated)&#10;825558&#10;825559&#10;825560..."></textarea>
@@ -415,16 +439,16 @@
 
             <div class="cdcms-actions">
               <button id="cdcms-start-btn" class="cdcms-btn cdcms-btn-primary">
-                <span>▶</span> Start Blocking
+                ${ICONS.PLAY} Start Blocking
               </button>
               <button id="cdcms-pause-btn" class="cdcms-btn cdcms-btn-warning" disabled>
-                <span>⏸</span> Pause
+                ${ICONS.PAUSE} Pause
               </button>
               <button id="cdcms-stop-btn" class="cdcms-btn cdcms-btn-danger" disabled>
-                <span>⏹</span> Stop
+                ${ICONS.STOP} Stop
               </button>
               <button id="cdcms-reset-btn" class="cdcms-btn cdcms-btn-reset" title="Reset all data to paste a new consumer batch">
-                <span>🔄</span> Reset
+                ${ICONS.RESET} Reset
               </button>
             </div>
 
@@ -466,13 +490,13 @@
 
             <div class="cdcms-footer">
               <button id="cdcms-download-report" class="cdcms-btn cdcms-btn-secondary">
-                <span>📥</span> Download Report (CSV)
+                ${ICONS.DOWNLOAD} Download Report (CSV)
               </button>
               <button id="cdcms-copy-failed" class="cdcms-btn cdcms-btn-secondary">
-                <span>📋</span> Copy Failed List
+                ${ICONS.COPY} Copy Failed List
               </button>
               <button id="cdcms-reset-footer-btn" class="cdcms-btn cdcms-btn-secondary" style="color: #dc2626; border-color: #fca5a5;" title="Clear all data and reset form">
-                <span>🔄</span> Reset All Data
+                ${ICONS.RESET} Reset All Data
               </button>
             </div>
           </div>
@@ -480,17 +504,17 @@
           <!-- Developer Branding & Support Section -->
           <div class="cdcms-dev-brand">
             <div class="cdcms-dev-badge">
-              <span>👤</span> Developed by <strong>Mr. Rahul Script</strong>
+              ${ICONS.USER} Developed by <strong>Mr. Rahul Script</strong>
             </div>
             <div class="cdcms-dev-subtext">
               Official Copyright & Technical Support • Business Automation Solutions
             </div>
             <div class="cdcms-contact-row">
               <a href="https://wa.me/917564948617" target="_blank" class="cdcms-contact-pill cdcms-contact-whatsapp">
-                <span>💬</span> WhatsApp: +917564948617
+                ${ICONS.WHATSAPP} WhatsApp: +917564948617
               </a>
               <a href="mailto:life.rahulg@gmail.com" class="cdcms-contact-pill cdcms-contact-email">
-                <span>✉</span> Email: life.rahulg@gmail.com
+                ${ICONS.MAIL} Email: life.rahulg@gmail.com
               </a>
             </div>
           </div>
@@ -582,18 +606,18 @@
       if (strip) strip.style.display = 'flex';
       const agencyName = licStatus.company ? ` • ${licStatus.company}` : '';
       const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays} days left - till ${licStatus.formattedExpiry}`;
-      if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
+      if (stripText) stripText.innerHTML = `${ICONS.SHIELD} License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
       if (launcherLabel && !launcherLabel.textContent.includes('Blocking')) {
-        launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
+        launcherLabel.innerHTML = `${ICONS.BOLT} CDCMS Auto-Blocker`;
       }
     } else if (licStatus && licStatus.status === 'expired') {
       // EXPIRED STATE: Lock completely and prompt to renew
       if (lockScreen) lockScreen.style.display = 'flex';
       if (mainForm) mainForm.style.display = 'none';
       if (strip) strip.style.display = 'none';
-      if (lockTitle) lockTitle.innerHTML = '<span style="color: #ef4444;">⚠️ License Expired</span>';
+      if (lockTitle) lockTitle.innerHTML = `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;">${ICONS.ALERT} License Expired</span>`;
       if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">Your access expired on <strong>${licStatus.formattedExpiry}</strong>.<br>Please renew your subscription on LicenseVault or contact Mr. Rahul Script to continue.</span>`;
-      if (launcherLabel) launcherLabel.textContent = '⚠️ License Expired';
+      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.ALERT} License Expired`;
       stopAutomation();
     } else {
       // UNLICENSED STATE: Keep locked
@@ -602,7 +626,7 @@
       if (strip) strip.style.display = 'none';
       if (lockTitle) lockTitle.textContent = 'License Activation Required';
       if (lockSubtitle) lockSubtitle.textContent = 'Please enter your LicenseVault key to unlock bulk blocking for this agency.';
-      if (launcherLabel) launcherLabel.textContent = '🔒 Activate License';
+      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.LOCK} Activate License`;
     }
   }
 
@@ -743,18 +767,18 @@
           const res = await LicenseManager.validateKeyAsync(key);
           if (res.valid) {
             LicenseManager.saveLicense(res);
-            if (licMsg) licMsg.innerHTML = '<span style="color: #4ade80;">✔ License Activated Successfully!</span>';
+            if (licMsg) licMsg.innerHTML = `<span style="color: #4ade80; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} License Activated Successfully!</span>`;
             setTimeout(() => {
               updateLicenseStateUI();
             }, 500);
           } else {
-            if (licMsg) licMsg.innerHTML = `<span style="color: #f87171;">✖ ${res.message}</span>`;
+            if (licMsg) licMsg.innerHTML = `<span style="color: #f87171; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} ${res.message}</span>`;
           }
         } catch (err) {
-          if (licMsg) licMsg.innerHTML = `<span style="color: #f87171;">✖ Verification error: ${err.message}</span>`;
+          if (licMsg) licMsg.innerHTML = `<span style="color: #f87171; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} Verification error: ${err.message}</span>`;
         } finally {
           licSubmit.disabled = false;
-          licSubmit.textContent = '🔑 Activate';
+          licSubmit.innerHTML = `${ICONS.KEY} Activate`;
         }
       });
     }
@@ -876,7 +900,7 @@
     // Strict License Verification Guard
     const currentLic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
     if (!currentLic || !currentLic.valid) {
-      alert('🔒 Access Denied: Please activate a valid License Key to start bulk blocking.');
+      alert('Access Denied: Please activate a valid License Key to start bulk blocking.');
       const lockScreen = document.getElementById('cdcms-lock-screen');
       const mainForm = document.getElementById('cdcms-main-form');
       if (lockScreen) lockScreen.style.display = 'flex';
@@ -1058,13 +1082,13 @@
       if (startBtn) startBtn.disabled = false;
       if (pauseBtn) pauseBtn.disabled = true;
       if (stopBtn) stopBtn.disabled = true;
-      if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #0284c7;">✔ Completed</span>';
+      if (statusIndicator) statusIndicator.innerHTML = `<span style="color: #0284c7; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} Completed</span>`;
       addLog('', 'INFO', `Finished! Total: ${job.total}, Blocked: ${job.successCount}, Failed: ${job.failedCount}`, 'info');
 
       const launcherBtn = document.getElementById('cdcms-launcher-btn');
       const launcherLabel = document.getElementById('cdcms-launcher-label');
       if (launcherBtn) launcherBtn.classList.remove('is-running');
-      if (launcherLabel) launcherLabel.textContent = `✔ Finished (${job.successCount} OK, ${job.failedCount} Fail)`;
+      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.CHECK} Finished (${job.successCount} OK, ${job.failedCount} Fail)`;
       return;
     }
 
@@ -1080,7 +1104,7 @@
     const launcherLabel = document.getElementById('cdcms-launcher-label');
     if (launcherBtn) launcherBtn.classList.add('is-running');
     if (launcherLabel) {
-      launcherLabel.textContent = `⚡ Blocking (${job.currentIndex + 1}/${job.total})`;
+      launcherLabel.innerHTML = `${ICONS.BOLT} Blocking (${job.currentIndex + 1}/${job.total})`;
     }
 
     lastCapturedAlert = '';
@@ -1288,20 +1312,20 @@
 
     if (job.isPaused) {
       if (pauseBtn) {
-        pauseBtn.innerHTML = '<span>▶</span> Resume';
+        pauseBtn.innerHTML = `${ICONS.PLAY} Resume`;
         pauseBtn.className = 'cdcms-btn cdcms-btn-primary';
       }
-      if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #f59e0b;">⏸ Paused</span>';
+      if (statusIndicator) statusIndicator.innerHTML = `<span style="color: #f59e0b; display: inline-flex; align-items: center; gap: 4px;">${ICONS.PAUSE} Paused</span>`;
       if (launcherBtn) launcherBtn.classList.remove('is-running');
-      if (launcherLabel) launcherLabel.textContent = `⏸ Paused (${job.currentIndex + 1}/${job.total})`;
+      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.PAUSE} Paused (${job.currentIndex + 1}/${job.total})`;
     } else {
       if (pauseBtn) {
-        pauseBtn.innerHTML = '<span>⏸</span> Pause';
+        pauseBtn.innerHTML = `${ICONS.PAUSE} Pause`;
         pauseBtn.className = 'cdcms-btn cdcms-btn-warning';
       }
       if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #16a34a;">● Resuming...</span>';
       if (launcherBtn) launcherBtn.classList.add('is-running');
-      if (launcherLabel) launcherLabel.textContent = `⚡ Blocking (${job.currentIndex + 1}/${job.total})`;
+      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.BOLT} Blocking (${job.currentIndex + 1}/${job.total})`;
       runNextInJob();
     }
   }
@@ -1315,7 +1339,7 @@
       saveJob(job);
     }
     const statusIndicator = document.getElementById('cdcms-status-indicator');
-    if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #dc2626;">⏹ Stopped</span>';
+    if (statusIndicator) statusIndicator.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px;">${ICONS.STOP} Stopped</span>`;
     const startBtn = document.getElementById('cdcms-start-btn');
     const pauseBtn = document.getElementById('cdcms-pause-btn');
     const stopBtn = document.getElementById('cdcms-stop-btn');
@@ -1327,7 +1351,7 @@
     const launcherBtn = document.getElementById('cdcms-launcher-btn');
     const launcherLabel = document.getElementById('cdcms-launcher-label');
     if (launcherBtn) launcherBtn.classList.remove('is-running');
-    if (launcherLabel) launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
+    if (launcherLabel) launcherLabel.innerHTML = `${ICONS.BOLT} CDCMS Auto-Blocker`;
   }
 
   // Reset all data and clear form for a new batch
@@ -1555,7 +1579,7 @@
     } finally {
       if (isManual && btn) {
         btn.disabled = false;
-        btn.textContent = '🔄 Check';
+        btn.innerHTML = `${ICONS.REFRESH} Check Update`;
       }
     }
   }
