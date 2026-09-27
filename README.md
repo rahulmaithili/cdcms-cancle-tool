@@ -28,6 +28,7 @@ Integrated with the **[LicenseVault Platform](https://licensescript.netlify.app/
   - Real-time counters: `Total`, `Blocked (Success)`, `Failed`, and `Remaining`.
   - Live progress bar and activity log.
   - Full `Pause`, `Resume`, and `Stop` controls.
+  - **1-Click Batch Reset**: Instant Reset button to wipe completed consumer lists, counters, and logs, allowing operators to immediately paste and run a new batch.
 - **Reporting & Export**:
   - One-click CSV / Excel report export.
   - One-click copy for failed consumer numbers.

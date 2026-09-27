@@ -311,7 +311,10 @@
             <div class="cdcms-form-group">
               <div class="cdcms-label">
                 <span>Consumer Numbers (Paste List)</span>
-                <span id="cdcms-total-count" style="color: #0284c7;">0 numbers</span>
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <span id="cdcms-total-count" style="color: #0284c7;">0 numbers</span>
+                  <button type="button" id="cdcms-quick-clear-btn" class="cdcms-clear-link" title="Clear text and reset for new batch">✕ Clear Box</button>
+                </div>
               </div>
               <textarea id="cdcms-consumer-list" class="cdcms-textarea" placeholder="Paste Consumer Numbers here (one per line, comma or space separated)&#10;825558&#10;825559&#10;825560..."></textarea>
             </div>
@@ -354,6 +357,9 @@
               </button>
               <button id="cdcms-stop-btn" class="cdcms-btn cdcms-btn-danger" disabled>
                 <span>⏹</span> Stop
+              </button>
+              <button id="cdcms-reset-btn" class="cdcms-btn cdcms-btn-reset" title="Reset all data to paste a new consumer batch">
+                <span>🔄</span> Reset
               </button>
             </div>
 
@@ -399,6 +405,9 @@
               </button>
               <button id="cdcms-copy-failed" class="cdcms-btn cdcms-btn-secondary">
                 <span>📋</span> Copy Failed List
+              </button>
+              <button id="cdcms-reset-footer-btn" class="cdcms-btn cdcms-btn-secondary" style="color: #dc2626; border-color: #fca5a5;" title="Clear all data and reset form">
+                <span>🔄</span> Reset All Data
               </button>
             </div>
           </div>
@@ -568,6 +577,15 @@
     startBtn.addEventListener('click', startAutomation);
     pauseBtn.addEventListener('click', togglePause);
     stopBtn.addEventListener('click', stopAutomation);
+
+    // Reset Data Buttons
+    const resetBtn = document.getElementById('cdcms-reset-btn');
+    const quickClearBtn = document.getElementById('cdcms-quick-clear-btn');
+    const resetFooterBtn = document.getElementById('cdcms-reset-footer-btn');
+
+    if (resetBtn) resetBtn.addEventListener('click', () => resetAllData(true));
+    if (quickClearBtn) quickClearBtn.addEventListener('click', () => resetAllData(false));
+    if (resetFooterBtn) resetFooterBtn.addEventListener('click', () => resetAllData(true));
 
     // Download CSV
     downloadBtn.addEventListener('click', downloadCSVReport);
@@ -1222,6 +1240,83 @@
     if (pauseBtn) pauseBtn.disabled = true;
     if (stopBtn) stopBtn.disabled = true;
     addLog('', 'INFO', 'Process stopped by user.', 'info');
+  }
+
+  // Reset all data and clear form for a new batch
+  function resetAllData(promptUser = true) {
+    if (promptUser && logsData.length > 0) {
+      const confirmReset = confirm('Are you sure you want to reset all data and clear the consumer list for a new batch?');
+      if (!confirmReset) return;
+    }
+
+    // 1. Stop any active job
+    const job = getSavedJob();
+    if (job && job.isRunning) {
+      job.isRunning = false;
+      saveJob(null);
+    } else {
+      saveJob(null);
+    }
+
+    // 2. Clear textarea and saved consumer raw text
+    const textarea = document.getElementById('cdcms-consumer-list');
+    if (textarea) {
+      textarea.value = '';
+      textarea.focus();
+    }
+    localStorage.removeItem('cdcms_consumer_raw_text');
+
+    // 3. Reset total count indicator
+    const totalCount = document.getElementById('cdcms-total-count');
+    if (totalCount) {
+      totalCount.textContent = '0 numbers';
+    }
+
+    // 4. Reset counters & progress bar
+    updateCounters(0, 0, 0, 0);
+    const elBar = document.getElementById('cdcms-progress-bar');
+    if (elBar) elBar.style.width = '0%';
+
+    // 5. Clear activity logs
+    logsData = [];
+    localStorage.removeItem('cdcms_blocker_logs');
+    const logBox = document.getElementById('cdcms-log-box');
+    if (logBox) {
+      logBox.innerHTML = `
+        <div class="cdcms-log-item info">
+          <span class="cdcms-log-time">[System]</span>
+          <span>Data reset complete. Paste new consumer numbers and click 'Start Blocking'.</span>
+        </div>
+      `;
+    }
+
+    // 6. Reset status indicator
+    const statusIndicator = document.getElementById('cdcms-status-indicator');
+    if (statusIndicator) {
+      statusIndicator.innerHTML = '<span style="color: #64748b;">Ready</span>';
+    }
+
+    // 7. Reset action buttons state
+    const startBtn = document.getElementById('cdcms-start-btn');
+    const pauseBtn = document.getElementById('cdcms-pause-btn');
+    const stopBtn = document.getElementById('cdcms-stop-btn');
+    if (startBtn) startBtn.disabled = false;
+    if (pauseBtn) {
+      pauseBtn.disabled = true;
+      pauseBtn.innerHTML = '<span>⏸</span> Pause';
+      pauseBtn.className = 'cdcms-btn cdcms-btn-warning';
+    }
+    if (stopBtn) stopBtn.disabled = true;
+
+    // 8. Clear CDCMS webpage inputs if present
+    const pageConsumerInp = DOMFinder.getConsumerNoInput();
+    if (pageConsumerInp) {
+      pageConsumerInp.value = '';
+    }
+    const clearBtn = DOMFinder.getClearButton();
+    if (clearBtn) {
+      clearBtn.click();
+    }
   }
 
   // Download CSV Report
