@@ -229,6 +229,10 @@
     launcher.style.display = 'none';
     panel.style.display = 'flex';
     root.classList.remove('cdcms-minimized');
+    root.style.bottom = 'auto';
+    if (!root.style.top || root.style.top === 'auto') {
+      root.style.top = '60px';
+    }
     localStorage.setItem('cdcms_blocker_minimized', 'false');
     sessionStorage.removeItem('cdcms_blocker_closed');
     updateLicenseStateUI();
@@ -276,9 +280,17 @@
 
     root.innerHTML = `
       <div id="cdcms-launcher-btn" style="display: ${launcherStyle}; cursor: pointer;" title="Click to open HP Gas CDCMS Auto-Blocker">
-        ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-launcher-logo" alt="RS" />` : ''}
-        <span id="cdcms-launcher-label">⚡ CDCMS Auto-Blocker</span>
-        <span id="cdcms-launcher-close" title="Close completely (Hide from screen)" style="margin-left: 8px; font-size: 13px; font-weight: bold; opacity: 0.8; padding: 1px 6px; border-radius: 50%; background: rgba(0,0,0,0.25);">✕</span>
+        <div class="cdcms-dock-content">
+          <div class="cdcms-dock-sub">MR.RAHUL SCRIPTS</div>
+          <div class="cdcms-dock-main">
+            ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-launcher-logo" alt="RS" />` : ''}
+            <span id="cdcms-launcher-label">⚡ CDCMS Auto-Blocker</span>
+          </div>
+        </div>
+        <div class="cdcms-dock-actions">
+          <span class="cdcms-dock-chevron" title="Click to expand">▲</span>
+          <span id="cdcms-launcher-close" title="Close completely (Hide from screen)">✕</span>
+        </div>
       </div>
 
       <div id="cdcms-panel" style="display: ${panelStyle};">
@@ -287,24 +299,44 @@
             ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-logo-icon" alt="RS" />` : ''}
             <span>⚡ HP Gas CDCMS Blocker</span>
             <span class="cdcms-badge">CM-16</span>
+            <span class="cdcms-badge" id="cdcms-ver-badge" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 10px;" title="Extension Version">v1.0.0</span>
           </div>
           <div class="cdcms-header-actions">
-            <button class="cdcms-btn-icon" id="cdcms-min-btn" title="Minimize to small badge">─</button>
+            <button class="cdcms-btn-icon" id="cdcms-min-btn" title="Minimize to bottom badge">─</button>
             <button class="cdcms-btn-icon" id="cdcms-close-btn" title="Close completely (Hide from page)" style="font-weight: bold; font-size: 14px; margin-left: 4px; color: #f87171;">✕</button>
           </div>
         </div>
 
         <div class="cdcms-panel-body">
-          <!-- GitHub Auto-Update Notification Banner -->
-          <div id="cdcms-update-banner" style="display: none; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: #ffffff; padding: 7px 10px; font-size: 11px; border-radius: 6px; margin-bottom: 8px; align-items: center; justify-content: space-between;">
-            <span>🚀 <b>Update Available (<span id="cdcms-update-ver-label"></span>)!</b></span>
-            <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" style="background: #ffffff; color: #4f46e5; padding: 2px 8px; border-radius: 4px; font-weight: 700; text-decoration: none; font-size: 10px;">Update Now</a>
-          </div>
-
           <!-- License Status Strip -->
           <div id="cdcms-license-strip" class="cdcms-license-strip" style="display: none;">
             <span id="cdcms-strip-text">🛡️ License: Checking...</span>
             <button id="cdcms-deactivate-btn" class="cdcms-lic-btn-change">Change Key</button>
+          </div>
+
+          <!-- GitHub Version & Live Update Bar (Always Visible) -->
+          <div id="cdcms-github-bar" class="cdcms-github-bar">
+            <div class="cdcms-gh-info">
+              <span class="cdcms-gh-tag">🐙 GitHub:</span>
+              <span id="cdcms-gh-cur-ver" class="cdcms-gh-ver">v1.0.0</span>
+              <span id="cdcms-gh-status-text" class="cdcms-gh-status-text">• Up to date</span>
+            </div>
+            <div class="cdcms-gh-btns">
+              <button type="button" id="cdcms-check-gh-btn" class="cdcms-gh-btn" title="Check GitHub for latest release">🔄 Check</button>
+              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip" target="_blank" class="cdcms-gh-btn cdcms-gh-btn-zip" title="Direct Download latest ZIP from GitHub">📥 ZIP</a>
+            </div>
+          </div>
+
+          <!-- GitHub Auto-Update Notification Banner (Appears when new version found) -->
+          <div id="cdcms-update-banner" class="cdcms-update-alert" style="display: none;">
+            <div class="cdcms-update-alert-content">
+              <span>🚀 <strong>New Version <span id="cdcms-update-ver-label">v1.0.1</span> Available!</strong></span>
+              <div style="font-size: 10px; opacity: 0.9; margin-top: 2px;">Click Direct Download below, then extract files or run update.bat.</div>
+            </div>
+            <div style="display: flex; gap: 6px; align-items: center;">
+              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip" target="_blank" class="cdcms-update-dl-btn">📥 Download ZIP</a>
+              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool" target="_blank" class="cdcms-update-repo-btn">📂 Repo</a>
+            </div>
           </div>
 
           <!-- Lock Screen (When License Inactive) -->
@@ -674,6 +706,14 @@
           copyDevBtn.textContent = 'Copied!';
           setTimeout(() => { copyDevBtn.textContent = orig; }, 1200);
         });
+      });
+    }
+
+    // GitHub Check Update Button in Panel
+    const ghCheckBtn = document.getElementById('cdcms-check-gh-btn');
+    if (ghCheckBtn) {
+      ghCheckBtn.addEventListener('click', () => {
+        checkGitHubUpdates(true);
       });
     }
 
@@ -1456,27 +1496,67 @@
   }
 
   // Check GitHub for new releases / updates
-  async function checkGitHubUpdates() {
-    try {
-      const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
-        ? chrome.runtime.getManifest().version
-        : '1.0.0';
+  async function checkGitHubUpdates(isManual = false) {
+    const btn = document.getElementById('cdcms-check-gh-btn');
+    const statusText = document.getElementById('cdcms-gh-status-text');
+    const banner = document.getElementById('cdcms-update-banner');
+    const verLabel = document.getElementById('cdcms-update-ver-label');
+    const curVerEl = document.getElementById('cdcms-gh-cur-ver');
+    const badgeVerEl = document.getElementById('cdcms-ver-badge');
 
+    const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+      ? chrome.runtime.getManifest().version
+      : '1.0.0';
+
+    if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
+    if (badgeVerEl) badgeVerEl.textContent = `v${currentVersion}`;
+
+    if (isManual) {
+      if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Checking...';
+      }
+      if (statusText) {
+        statusText.textContent = '• Checking GitHub...';
+        statusText.style.color = '#0284c7';
+      }
+    }
+
+    try {
       const res = await fetch(`https://raw.githubusercontent.com/rahulmaithili/cdcms-cancle-tool/main/manifest.json?t=${Date.now()}`);
-      if (!res.ok) return;
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
       const remoteVersion = data.version;
 
       if (compareVersions(remoteVersion, currentVersion) > 0) {
-        const banner = document.getElementById('cdcms-update-banner');
-        const verLabel = document.getElementById('cdcms-update-ver-label');
-        if (banner) {
-          banner.style.display = 'flex';
-          if (verLabel) verLabel.textContent = `v${remoteVersion}`;
+        if (statusText) {
+          statusText.textContent = `• New v${remoteVersion} Available!`;
+          statusText.style.color = '#16a34a';
+        }
+        if (banner) banner.style.display = 'flex';
+        if (verLabel) verLabel.textContent = `v${remoteVersion}`;
+      } else {
+        if (statusText) {
+          statusText.textContent = isManual ? '• Latest version installed!' : '• Up to date';
+          statusText.style.color = '#16a34a';
+        }
+        if (banner) banner.style.display = 'none';
+        if (isManual) {
+          setTimeout(() => {
+            if (statusText) statusText.textContent = '• Up to date';
+          }, 4000);
         }
       }
     } catch (e) {
-      // Ignore network / offline error
+      if (isManual && statusText) {
+        statusText.textContent = '• Check failed (offline)';
+        statusText.style.color = '#ef4444';
+      }
+    } finally {
+      if (isManual && btn) {
+        btn.disabled = false;
+        btn.textContent = '🔄 Check';
+      }
     }
   }
 

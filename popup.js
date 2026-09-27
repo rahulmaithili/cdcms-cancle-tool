@@ -174,6 +174,62 @@ async function checkGitHubUpdates() {
   }
 }
 
+async function manualCheckPopupUpdate() {
+  const btn = document.getElementById('popup-check-update-btn');
+  const msg = document.getElementById('popup-gh-msg');
+  const banner = document.getElementById('popup-update-banner');
+  const verLabel = document.getElementById('popup-update-version');
+  const curVerEl = document.getElementById('popup-cur-ver');
+
+  const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+    ? chrome.runtime.getManifest().version
+    : '1.0.0';
+
+  if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
+  if (btn) {
+    btn.disabled = true;
+    btn.textContent = 'Checking...';
+  }
+  if (msg) {
+    msg.textContent = 'Contacting GitHub server...';
+    msg.style.color = '#0284c7';
+  }
+
+  try {
+    const res = await fetch(`https://raw.githubusercontent.com/rahulmaithili/cdcms-cancle-tool/main/manifest.json?t=${Date.now()}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const remoteVersion = data.version;
+
+    if (compareVersions(remoteVersion, currentVersion) > 0) {
+      if (msg) {
+        msg.innerHTML = `<span style="color: #16a34a; font-weight: 700;">🎉 New Version v${remoteVersion} Available! Click Download ZIP below.</span>`;
+      }
+      if (banner) banner.style.display = 'flex';
+      if (verLabel) verLabel.textContent = `v${remoteVersion}`;
+    } else {
+      if (msg) {
+        msg.innerHTML = `<span style="color: #16a34a; font-weight: 600;">✔ You have the latest version (v${currentVersion}) installed!</span>`;
+      }
+      if (banner) banner.style.display = 'none';
+    }
+  } catch (err) {
+    if (msg) {
+      msg.innerHTML = `<span style="color: #dc2626;">Check failed: Check internet connection.</span>`;
+    }
+  } finally {
+    if (btn) {
+      btn.disabled = false;
+      btn.textContent = '🔄 Check';
+    }
+  }
+}
+
+const checkUpBtn = document.getElementById('popup-check-update-btn');
+if (checkUpBtn) {
+  checkUpBtn.addEventListener('click', manualCheckPopupUpdate);
+}
+
 // Listen to storage sync events
 if (typeof window !== 'undefined') {
   window.addEventListener('cdcms_license_synced', () => {
@@ -182,6 +238,12 @@ if (typeof window !== 'undefined') {
 }
 
 window.addEventListener('DOMContentLoaded', async () => {
+  const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+    ? chrome.runtime.getManifest().version
+    : '1.0.0';
+  const curVerEl = document.getElementById('popup-cur-ver');
+  if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
+
   if (typeof LicenseManager !== 'undefined' && LicenseManager.ready) {
     await LicenseManager.ready();
   }
