@@ -136,6 +136,44 @@ async function activatePanel() {
 
 document.getElementById('open-panel-btn').addEventListener('click', activatePanel);
 
+// Check GitHub for new releases / updates
+function compareVersions(v1, v2) {
+  if (!v1 || !v2) return 0;
+  const p1 = String(v1).replace(/^v/i, '').split('.').map(Number);
+  const p2 = String(v2).replace(/^v/i, '').split('.').map(Number);
+  for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+    const n1 = p1[i] || 0;
+    const n2 = p2[i] || 0;
+    if (n1 > n2) return 1;
+    if (n1 < n2) return -1;
+  }
+  return 0;
+}
+
+async function checkGitHubUpdates() {
+  try {
+    const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+      ? chrome.runtime.getManifest().version
+      : '1.0.0';
+
+    const res = await fetch(`https://raw.githubusercontent.com/rahulmaithili/cdcms-cancle-tool/main/manifest.json?t=${Date.now()}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    const remoteVersion = data.version;
+
+    if (compareVersions(remoteVersion, currentVersion) > 0) {
+      const banner = document.getElementById('popup-update-banner');
+      const verLabel = document.getElementById('popup-update-version');
+      if (banner) {
+        banner.style.display = 'flex';
+        if (verLabel) verLabel.textContent = `v${remoteVersion}`;
+      }
+    }
+  } catch (e) {
+    // Ignore network / offline error
+  }
+}
+
 // Listen to storage sync events
 if (typeof window !== 'undefined') {
   window.addEventListener('cdcms_license_synced', () => {
@@ -148,4 +186,5 @@ window.addEventListener('DOMContentLoaded', async () => {
     await LicenseManager.ready();
   }
   updateLicenseUI();
+  checkGitHubUpdates();
 });

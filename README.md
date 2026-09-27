@@ -99,6 +99,15 @@ To test all automation and licensing capabilities without logging into CDCMS:
 2. Activate your license using a valid key.
 3. Paste test consumer numbers (e.g. `825558`, `825559`, `825560`, `999999`) and click **Start Blocking**.
 
+## 🔄 Auto-Update from GitHub
+
+The extension includes automated GitHub update detection and 1-click update:
+- **In-App Notification**: Whenever a new version is pushed to GitHub, a notification banner appears in the extension header: `🚀 Update Available!`.
+- **1-Click Updater (`update.bat`)**:
+  - Simply double-click `update.bat` in the extension folder.
+  - It automatically pulls the latest code from GitHub (or downloads and extracts the newest zip).
+  - Open `chrome://extensions/` and click the **Reload (🔄)** icon to apply the update immediately!
+
 ---
 
 ## 👤 Developer & Official Support
