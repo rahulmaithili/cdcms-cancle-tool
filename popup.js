@@ -79,11 +79,13 @@ document.getElementById('popup-activate-btn').addEventListener('click', async ()
       LicenseManager.saveLicense(res);
       updateLicenseUI();
       statusMsg.innerHTML = '<span style="color: #16a34a;">✔ License Activated Successfully!</span>';
-      // Notify active tab to unlock immediately
-      chrome.tabs.query({ active: true, currentWindow: true }, (tabs) => {
-        if (tabs[0]?.id) {
-          chrome.tabs.sendMessage(tabs[0].id, { action: 'LICENSE_UPDATED' });
-        }
+      // Notify all tabs to unlock immediately
+      chrome.tabs.query({}, (tabs) => {
+        tabs.forEach(t => {
+          if (t?.id) {
+            chrome.tabs.sendMessage(t.id, { action: 'LICENSE_UPDATED' }).catch(() => {});
+          }
+        });
       });
     } else {
       statusMsg.innerHTML = `<span style="color: #dc2626;">✖ ${res.message}</span>`;
@@ -117,7 +119,7 @@ async function activatePanel() {
             files: ['license.js', 'content.js']
           });
           setTimeout(() => {
-            chrome.tabs.sendMessage(tab.id, { action: 'OPEN_PANEL' });
+            chrome.tabs.sendMessage(tab.id, { action: 'OPEN_PANEL' }).catch(() => {});
             window.close();
           }, 400);
         } catch (e) {
@@ -134,6 +136,16 @@ async function activatePanel() {
 
 document.getElementById('open-panel-btn').addEventListener('click', activatePanel);
 
-window.addEventListener('DOMContentLoaded', () => {
+// Listen to storage sync events
+if (typeof window !== 'undefined') {
+  window.addEventListener('cdcms_license_synced', () => {
+    updateLicenseUI();
+  });
+}
+
+window.addEventListener('DOMContentLoaded', async () => {
+  if (typeof LicenseManager !== 'undefined' && LicenseManager.ready) {
+    await LicenseManager.ready();
+  }
   updateLicenseUI();
 });

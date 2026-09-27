@@ -206,6 +206,35 @@
     return false;
   }
 
+  // Minimize floating panel to bottom-right pill
+  function minimizeToBottom() {
+    const root = document.getElementById('cdcms-blocker-root');
+    const panel = document.getElementById('cdcms-panel');
+    const launcher = document.getElementById('cdcms-launcher-btn');
+    if (!root || !panel || !launcher) return;
+
+    panel.style.display = 'none';
+    launcher.style.display = 'flex';
+    root.classList.add('cdcms-minimized');
+    localStorage.setItem('cdcms_blocker_minimized', 'true');
+  }
+
+  // Restore floating panel from bottom-right pill to top/main position
+  function restoreFromBottom() {
+    const root = document.getElementById('cdcms-blocker-root');
+    const panel = document.getElementById('cdcms-panel');
+    const launcher = document.getElementById('cdcms-launcher-btn');
+    if (!root || !panel || !launcher) return;
+
+    launcher.style.display = 'none';
+    panel.style.display = 'flex';
+    root.classList.remove('cdcms-minimized');
+    localStorage.setItem('cdcms_blocker_minimized', 'false');
+    sessionStorage.removeItem('cdcms_blocker_closed');
+    updateLicenseStateUI();
+    syncPageReasonOptions();
+  }
+
   // Build Floating UI Panel
   function createUI(forceOpen = false) {
     // Only open on Block Consumer screen unless explicitly requested by user
@@ -227,12 +256,7 @@
       const existing = document.getElementById('cdcms-blocker-root');
       existing.style.display = 'block';
       if (forceOpen) {
-        sessionStorage.removeItem('cdcms_blocker_closed');
-        const p = document.getElementById('cdcms-panel');
-        const l = document.getElementById('cdcms-launcher-btn');
-        if (p) p.style.display = 'flex';
-        if (l) l.style.display = 'none';
-        localStorage.setItem('cdcms_blocker_minimized', 'false');
+        restoreFromBottom();
       }
       return;
     }
@@ -246,6 +270,9 @@
 
     const root = document.createElement('div');
     root.id = 'cdcms-blocker-root';
+    if (isMinimized && !forceOpen) {
+      root.classList.add('cdcms-minimized');
+    }
 
     root.innerHTML = `
       <div id="cdcms-launcher-btn" style="display: ${launcherStyle}; cursor: pointer;" title="Click to open HP Gas CDCMS Auto-Blocker">
@@ -493,6 +520,54 @@
     }
   }
 
+  // Update license display state across all panels and launcher
+  function updateLicenseStateUI() {
+    const lockScreen = document.getElementById('cdcms-lock-screen');
+    const mainForm = document.getElementById('cdcms-main-form');
+    const strip = document.getElementById('cdcms-license-strip');
+    const stripText = document.getElementById('cdcms-strip-text');
+    const deviceIdEl = document.getElementById('cdcms-lock-device-id');
+    const lockTitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-title') : null;
+    const lockSubtitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-subtitle') : null;
+    const launcherLabel = document.getElementById('cdcms-launcher-label');
+
+    if (deviceIdEl && typeof LicenseManager !== 'undefined') {
+      deviceIdEl.textContent = LicenseManager.getDeviceId();
+    }
+
+    const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
+
+    if (licStatus && licStatus.valid && licStatus.status === 'active') {
+      // ACTIVE STATE: Unlock cancel/block page
+      if (lockScreen) lockScreen.style.display = 'none';
+      if (mainForm) mainForm.style.display = 'flex';
+      if (strip) strip.style.display = 'flex';
+      const agencyName = licStatus.company ? ` • ${licStatus.company}` : '';
+      const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays} days left - till ${licStatus.formattedExpiry}`;
+      if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
+      if (launcherLabel && !launcherLabel.textContent.includes('Blocking')) {
+        launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
+      }
+    } else if (licStatus && licStatus.status === 'expired') {
+      // EXPIRED STATE: Lock completely and prompt to renew
+      if (lockScreen) lockScreen.style.display = 'flex';
+      if (mainForm) mainForm.style.display = 'none';
+      if (strip) strip.style.display = 'none';
+      if (lockTitle) lockTitle.innerHTML = '<span style="color: #ef4444;">⚠️ License Expired</span>';
+      if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">Your access expired on <strong>${licStatus.formattedExpiry}</strong>.<br>Please renew your subscription on LicenseVault or contact Mr. Rahul Script to continue.</span>`;
+      if (launcherLabel) launcherLabel.textContent = '⚠️ License Expired';
+      stopAutomation();
+    } else {
+      // UNLICENSED STATE: Keep locked
+      if (lockScreen) lockScreen.style.display = 'flex';
+      if (mainForm) mainForm.style.display = 'none';
+      if (strip) strip.style.display = 'none';
+      if (lockTitle) lockTitle.textContent = 'License Activation Required';
+      if (lockSubtitle) lockSubtitle.textContent = 'Please enter your LicenseVault key to unlock bulk blocking for this agency.';
+      if (launcherLabel) launcherLabel.textContent = '🔒 Activate License';
+    }
+  }
+
   function setupUIListeners() {
     const launcher = document.getElementById('cdcms-launcher-btn');
     const panel = document.getElementById('cdcms-panel');
@@ -547,21 +622,9 @@
       });
     }
 
-    // Toggle Open/Close
-    launcher.addEventListener('click', () => {
-      updateLicenseStateUI();
-      launcher.style.display = 'none';
-      panel.style.display = 'flex';
-      localStorage.setItem('cdcms_blocker_minimized', 'false');
-      sessionStorage.removeItem('cdcms_blocker_closed');
-      syncPageReasonOptions();
-    });
-
-    minBtn.addEventListener('click', () => {
-      panel.style.display = 'none';
-      launcher.style.display = 'flex';
-      localStorage.setItem('cdcms_blocker_minimized', 'true');
-    });
+    // Toggle Open/Minimize (Supports bottom-pill minimization)
+    launcher.addEventListener('click', restoreFromBottom);
+    minBtn.addEventListener('click', minimizeToBottom);
 
     // Clear logs
     clearLogBtn.addEventListener('click', () => {
@@ -592,53 +655,6 @@
 
     // Copy Failed
     copyFailedBtn.addEventListener('click', copyFailedNumbers);
-
-
-    // Update license display state
-    function updateLicenseStateUI() {
-      const lockScreen = document.getElementById('cdcms-lock-screen');
-      const mainForm = document.getElementById('cdcms-main-form');
-      const strip = document.getElementById('cdcms-license-strip');
-      const stripText = document.getElementById('cdcms-strip-text');
-      const deviceIdEl = document.getElementById('cdcms-lock-device-id');
-      const lockTitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-title') : null;
-      const lockSubtitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-subtitle') : null;
-      const launcherLabel = document.getElementById('cdcms-launcher-label');
-
-      if (deviceIdEl && typeof LicenseManager !== 'undefined') {
-        deviceIdEl.textContent = LicenseManager.getDeviceId();
-      }
-
-      const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
-
-      if (licStatus && licStatus.valid && licStatus.status === 'active') {
-        // ACTIVE STATE: Unlock cancel/block page
-        if (lockScreen) lockScreen.style.display = 'none';
-        if (mainForm) mainForm.style.display = 'flex';
-        if (strip) strip.style.display = 'flex';
-        const agencyName = licStatus.company ? ` • ${licStatus.company}` : '';
-        const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays} days left - till ${licStatus.formattedExpiry}`;
-        if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
-        if (launcherLabel) launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
-      } else if (licStatus && licStatus.status === 'expired') {
-        // EXPIRED STATE: Lock completely and prompt to renew
-        if (lockScreen) lockScreen.style.display = 'flex';
-        if (mainForm) mainForm.style.display = 'none';
-        if (strip) strip.style.display = 'none';
-        if (lockTitle) lockTitle.innerHTML = '<span style="color: #ef4444;">⚠️ License Expired</span>';
-        if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">Your access expired on <strong>${licStatus.formattedExpiry}</strong>.<br>Please renew your subscription on LicenseVault or contact Mr. Rahul Script to continue.</span>`;
-        if (launcherLabel) launcherLabel.textContent = '⚠️ License Expired';
-        stopAutomation();
-      } else {
-        // UNLICENSED STATE: Keep locked
-        if (lockScreen) lockScreen.style.display = 'flex';
-        if (mainForm) mainForm.style.display = 'none';
-        if (strip) strip.style.display = 'none';
-        if (lockTitle) lockTitle.textContent = 'License Activation Required';
-        if (lockSubtitle) lockSubtitle.textContent = 'Please enter your LicenseVault key to unlock bulk blocking for this agency.';
-        if (launcherLabel) launcherLabel.textContent = '🔒 Activate License';
-      }
-    }
 
     updateLicenseStateUI();
 
@@ -868,6 +884,9 @@
     updateCounters(job.total, 0, 0, job.total);
     addLog('', 'INFO', `Started bulk block for ${job.total} consumers.`, 'info');
 
+    // Auto-minimize down to the bottom pill so user has a full unobstructed view of the page
+    minimizeToBottom();
+
     runNextInJob();
   }
 
@@ -995,6 +1014,11 @@
       if (stopBtn) stopBtn.disabled = true;
       if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #0284c7;">✔ Completed</span>';
       addLog('', 'INFO', `Finished! Total: ${job.total}, Blocked: ${job.successCount}, Failed: ${job.failedCount}`, 'info');
+
+      const launcherBtn = document.getElementById('cdcms-launcher-btn');
+      const launcherLabel = document.getElementById('cdcms-launcher-label');
+      if (launcherBtn) launcherBtn.classList.remove('is-running');
+      if (launcherLabel) launcherLabel.textContent = `✔ Finished (${job.successCount} OK, ${job.failedCount} Fail)`;
       return;
     }
 
@@ -1004,6 +1028,13 @@
 
     if (statusIndicator) {
       statusIndicator.innerHTML = `<span style="color: #16a34a;">● Processing (${job.currentIndex + 1}/${job.total}): ${consumerNo}</span>`;
+    }
+
+    const launcherBtn = document.getElementById('cdcms-launcher-btn');
+    const launcherLabel = document.getElementById('cdcms-launcher-label');
+    if (launcherBtn) launcherBtn.classList.add('is-running');
+    if (launcherLabel) {
+      launcherLabel.textContent = `⚡ Blocking (${job.currentIndex + 1}/${job.total})`;
     }
 
     lastCapturedAlert = '';
@@ -1206,20 +1237,25 @@
     if (!job) return;
     job.isPaused = !job.isPaused;
     saveJob(job);
-    const pauseBtn = document.getElementById('cdcms-pause-btn');
-    const statusIndicator = document.getElementById('cdcms-status-indicator');
+    const launcherBtn = document.getElementById('cdcms-launcher-btn');
+    const launcherLabel = document.getElementById('cdcms-launcher-label');
+
     if (job.isPaused) {
       if (pauseBtn) {
         pauseBtn.innerHTML = '<span>▶</span> Resume';
         pauseBtn.className = 'cdcms-btn cdcms-btn-primary';
       }
       if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #f59e0b;">⏸ Paused</span>';
+      if (launcherBtn) launcherBtn.classList.remove('is-running');
+      if (launcherLabel) launcherLabel.textContent = `⏸ Paused (${job.currentIndex + 1}/${job.total})`;
     } else {
       if (pauseBtn) {
         pauseBtn.innerHTML = '<span>⏸</span> Pause';
         pauseBtn.className = 'cdcms-btn cdcms-btn-warning';
       }
       if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #16a34a;">● Resuming...</span>';
+      if (launcherBtn) launcherBtn.classList.add('is-running');
+      if (launcherLabel) launcherLabel.textContent = `⚡ Blocking (${job.currentIndex + 1}/${job.total})`;
       runNextInJob();
     }
   }
@@ -1229,6 +1265,7 @@
     const job = getSavedJob();
     if (job) {
       job.isRunning = false;
+      job.isPaused = false;
       saveJob(job);
     }
     const statusIndicator = document.getElementById('cdcms-status-indicator');
@@ -1240,6 +1277,11 @@
     if (pauseBtn) pauseBtn.disabled = true;
     if (stopBtn) stopBtn.disabled = true;
     addLog('', 'INFO', 'Process stopped by user.', 'info');
+
+    const launcherBtn = document.getElementById('cdcms-launcher-btn');
+    const launcherLabel = document.getElementById('cdcms-launcher-label');
+    if (launcherBtn) launcherBtn.classList.remove('is-running');
+    if (launcherLabel) launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
   }
 
   // Reset all data and clear form for a new batch
@@ -1393,11 +1435,25 @@
     }
   }
 
-  // Initialize once DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => createUI(false));
-  } else {
+  // Listen to cross-context license synchronization events
+  if (typeof window !== 'undefined') {
+    window.addEventListener('cdcms_license_synced', () => {
+      updateLicenseStateUI();
+    });
+  }
+
+  // Initialize once DOM is ready and unified storage is synchronized
+  async function initApp() {
+    if (typeof LicenseManager !== 'undefined' && LicenseManager.ready) {
+      await LicenseManager.ready();
+    }
     createUI(false);
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => initApp());
+  } else {
+    initApp();
   }
 
   // Listen for open commands from popup
@@ -1406,46 +1462,17 @@
       if (request.action === 'OPEN_PANEL') {
         sessionStorage.removeItem('cdcms_blocker_closed');
         createUI(true); // Force open when user clicks icon
+        restoreFromBottom();
         const root = document.getElementById('cdcms-blocker-root');
         if (root) root.style.display = 'block';
-        const panel = document.getElementById('cdcms-panel');
-        const launcher = document.getElementById('cdcms-launcher-btn');
-        if (panel) panel.style.display = 'flex';
-        if (launcher) launcher.style.display = 'none';
-        localStorage.setItem('cdcms_blocker_minimized', 'false');
         const txt = document.getElementById('cdcms-consumer-list');
         if (txt) txt.focus();
         sendResponse({ status: 'ok' });
       } else if (request.action === 'LICENSE_UPDATED') {
-        const lockScreen = document.getElementById('cdcms-lock-screen');
-        const mainForm = document.getElementById('cdcms-main-form');
-        const strip = document.getElementById('cdcms-license-strip');
-        const stripText = document.getElementById('cdcms-strip-text');
-        const lockTitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-title') : null;
-        const lockSubtitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-subtitle') : null;
-        const launcherLabel = document.getElementById('cdcms-launcher-label');
-
-        const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
-        if (licStatus && licStatus.valid && licStatus.status === 'active') {
-          if (lockScreen) lockScreen.style.display = 'none';
-          if (mainForm) mainForm.style.display = 'flex';
-          if (strip) strip.style.display = 'flex';
-          const agencyName = licStatus.company ? ` • ${licStatus.company}` : '';
-          const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays} days left - till ${licStatus.formattedExpiry}`;
-          if (stripText) stripText.innerHTML = `🛡️ License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
-          if (launcherLabel) launcherLabel.textContent = '⚡ CDCMS Auto-Blocker';
-        } else if (licStatus && licStatus.status === 'expired') {
-          if (lockScreen) lockScreen.style.display = 'flex';
-          if (mainForm) mainForm.style.display = 'none';
-          if (strip) strip.style.display = 'none';
-          if (lockTitle) lockTitle.innerHTML = '<span style="color: #ef4444;">⚠️ License Expired</span>';
-          if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">Your access expired on <strong>${licStatus.formattedExpiry}</strong>.<br>Please renew your subscription on LicenseVault or contact Mr. Rahul Script to continue.</span>`;
-          if (launcherLabel) launcherLabel.textContent = '⚠️ License Expired';
+        if (typeof LicenseManager !== 'undefined' && LicenseManager.ready) {
+          LicenseManager.ready().then(() => updateLicenseStateUI());
         } else {
-          if (lockScreen) lockScreen.style.display = 'flex';
-          if (mainForm) mainForm.style.display = 'none';
-          if (strip) strip.style.display = 'none';
-          if (launcherLabel) launcherLabel.textContent = '🔒 Activate License';
+          updateLicenseStateUI();
         }
         sendResponse({ status: 'ok' });
       }

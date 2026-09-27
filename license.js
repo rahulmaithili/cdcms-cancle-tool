@@ -22,11 +22,115 @@ const LicenseManager = (function() {
     SUPPORT_EMAIL: 'life.rahulg@gmail.com'
   };
 
+  // Shared in-memory cache
+  let cachedDeviceId = null;
+  let cachedLicense = null;
+  let isReady = false;
+  let readyResolvers = [];
+
+  function ready() {
+    return new Promise((resolve) => {
+      if (isReady) return resolve();
+      readyResolvers.push(resolve);
+    });
+  }
+
+  function notifyReady() {
+    isReady = true;
+    while (readyResolvers.length > 0) {
+      const r = readyResolvers.shift();
+      try { r(); } catch (e) {}
+    }
+  }
+
+  // 1. Immediate synchronous fallback from localStorage
+  try {
+    if (typeof localStorage !== 'undefined') {
+      cachedDeviceId = localStorage.getItem(CONFIG.DEVICE_ID_KEY) || null;
+      const rawLic = localStorage.getItem(CONFIG.STORAGE_KEY);
+      if (rawLic) {
+        cachedLicense = JSON.parse(rawLic);
+      }
+    }
+  } catch (e) {}
+
+  // 2. Asynchronous Master Synchronization with chrome.storage.local
+  // This ensures identical Device ID and License status across Extension Popup and CDCMS Content Scripts
+  if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+    chrome.storage.local.get([CONFIG.DEVICE_ID_KEY, CONFIG.STORAGE_KEY], (items) => {
+      try {
+        // Sync Device ID
+        if (items && items[CONFIG.DEVICE_ID_KEY]) {
+          cachedDeviceId = items[CONFIG.DEVICE_ID_KEY];
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(CONFIG.DEVICE_ID_KEY, cachedDeviceId);
+          }
+        } else if (cachedDeviceId) {
+          chrome.storage.local.set({ [CONFIG.DEVICE_ID_KEY]: cachedDeviceId });
+        } else {
+          // Generate unified persistent Device ID
+          const randA = Math.random().toString(36).substring(2, 8).toUpperCase();
+          const randB = Math.random().toString(36).substring(2, 8).toUpperCase();
+          const timeHex = Date.now().toString(16).toUpperCase();
+          cachedDeviceId = `LV-${randA}-${randB}-${timeHex.slice(-6)}`;
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(CONFIG.DEVICE_ID_KEY, cachedDeviceId);
+          }
+          chrome.storage.local.set({ [CONFIG.DEVICE_ID_KEY]: cachedDeviceId });
+        }
+
+        // Sync License Info
+        if (items && items[CONFIG.STORAGE_KEY]) {
+          cachedLicense = items[CONFIG.STORAGE_KEY];
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(cachedLicense));
+          }
+        } else if (cachedLicense) {
+          chrome.storage.local.set({ [CONFIG.STORAGE_KEY]: cachedLicense });
+        }
+      } catch (err) {
+        console.warn('[LicenseVault] Storage sync error:', err);
+      } finally {
+        notifyReady();
+      }
+    });
+
+    // Real-time synchronization listener across popup, background, and content tabs
+    if (chrome.storage.onChanged) {
+      chrome.storage.onChanged.addListener((changes, area) => {
+        if (area === 'local') {
+          if (changes[CONFIG.DEVICE_ID_KEY]) {
+            cachedDeviceId = changes[CONFIG.DEVICE_ID_KEY].newValue || cachedDeviceId;
+            if (typeof localStorage !== 'undefined' && cachedDeviceId) {
+              localStorage.setItem(CONFIG.DEVICE_ID_KEY, cachedDeviceId);
+            }
+          }
+          if (changes[CONFIG.STORAGE_KEY]) {
+            cachedLicense = changes[CONFIG.STORAGE_KEY].newValue || null;
+            if (typeof localStorage !== 'undefined') {
+              if (cachedLicense) {
+                localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(cachedLicense));
+              } else {
+                localStorage.removeItem(CONFIG.STORAGE_KEY);
+              }
+            }
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('cdcms_license_synced', { detail: cachedLicense }));
+            }
+          }
+        }
+      });
+    }
+  } else {
+    notifyReady();
+  }
+
   /**
    * Generates or retrieves a unique persistent device ID for this browser.
-   * Used by LicenseVault to bind 1 license key to 1 device.
+   * Synchronized across Extension Popup and Webpage Content Script via chrome.storage.local.
    */
   function getDeviceId() {
+    if (cachedDeviceId) return cachedDeviceId;
     try {
       let id = (typeof localStorage !== 'undefined') ? localStorage.getItem(CONFIG.DEVICE_ID_KEY) : null;
       if (!id) {
@@ -37,6 +141,10 @@ const LicenseManager = (function() {
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem(CONFIG.DEVICE_ID_KEY, id);
         }
+      }
+      cachedDeviceId = id;
+      if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+        chrome.storage.local.set({ [CONFIG.DEVICE_ID_KEY]: id });
       }
       return id;
     } catch (e) {
@@ -350,24 +458,16 @@ const LicenseManager = (function() {
    */
   function checkLicenseStatus() {
     try {
-      let raw = null;
-      if (typeof localStorage !== 'undefined') {
-        raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+      let parsed = cachedLicense;
+      if (!parsed && typeof localStorage !== 'undefined') {
+        const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
+        if (raw) parsed = JSON.parse(raw);
       }
-      if (!raw) {
-        return {
-          status: 'unlicensed',
-          valid: false,
-          message: 'No license key activated. Please enter your license key to unlock.'
-        };
-      }
-
-      const parsed = JSON.parse(raw);
       if (!parsed || !parsed.key) {
         return {
           status: 'unlicensed',
           valid: false,
-          message: 'Invalid license record. Please activate your license key.'
+          message: 'No license key activated. Please enter your license key to unlock.'
         };
       }
 
@@ -451,7 +551,7 @@ const LicenseManager = (function() {
   }
 
   /**
-   * Saves verified license data to persistent storage.
+   * Saves verified license data to persistent storage across popup & content scripts.
    */
   function saveLicense(licenseData) {
     try {
@@ -460,31 +560,40 @@ const LicenseManager = (function() {
         lastVerifiedAt: Date.now(),
         deviceId: getDeviceId()
       };
+      cachedLicense = payload;
       if (typeof localStorage !== 'undefined') {
         localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify(payload));
       }
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ [CONFIG.STORAGE_KEY]: payload });
       }
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('cdcms_license_synced', { detail: payload }));
+      }
     } catch (e) {}
   }
 
   /**
-   * Removes license (deactivation).
+   * Removes license (deactivation) across all storage locations.
    */
   function removeLicense() {
     try {
+      cachedLicense = null;
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem(CONFIG.STORAGE_KEY);
       }
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
         chrome.storage.local.remove([CONFIG.STORAGE_KEY]);
       }
+      if (typeof window !== 'undefined' && window.dispatchEvent) {
+        window.dispatchEvent(new CustomEvent('cdcms_license_synced', { detail: null }));
+      }
     } catch (e) {}
   }
 
   return {
     CONFIG,
+    ready,
     getDeviceId,
     validateKey,
     validateKeyAsync,
