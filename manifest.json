@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "HP Gas CDCMS Automation Tool",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Automate bulk consumer blocking (CM-16) and PFMS Beneficiary Retrigger (CM-43) on HP GAS portal with smart logs and export.",
   "permissions": [
     "storage",
