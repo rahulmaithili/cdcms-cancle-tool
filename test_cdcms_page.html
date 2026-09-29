@@ -106,6 +106,38 @@
       font-size: 12px;
       display: none;
     }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+      font-size: 12px;
+      background: #ffffff;
+    }
+    .data-table th, .data-table td {
+      border: 1px solid #b8daff;
+      padding: 6px 10px;
+      text-align: left;
+    }
+    .data-table th {
+      background: #d0e2f5;
+      color: #004085;
+    }
+    .sim-tab-btn {
+      padding: 8px 16px;
+      font-size: 13px;
+      font-weight: bold;
+      border: 1px solid #0056b3;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    .sim-tab-active {
+      background: #0056b3;
+      color: #ffffff;
+    }
+    .sim-tab-inactive {
+      background: #ffffff;
+      color: #0056b3;
+    }
   </style>
 </head>
 <body>
@@ -116,49 +148,116 @@
   </div>
 
   <div class="main-content">
-    <div class="screen-header">
-      Consumer Management/Block Consumer &nbsp;&nbsp; ScreenCode(CM-16)
+    <!-- SIMULATOR SCREEN SELECTOR -->
+    <div style="display: flex; gap: 10px; margin-bottom: 16px;">
+      <button id="simBtnCm16" class="sim-tab-btn sim-tab-active" onclick="switchSimulatorScreen('CM-16')">
+        Simulate CM-16: Block Consumer
+      </button>
+      <button id="simBtnCm43" class="sim-tab-btn sim-tab-inactive" onclick="switchSimulatorScreen('CM-43')">
+        Simulate CM-43: PFMS Beneficiary Retrigger
+      </button>
     </div>
 
-    <!-- FILTERING CRITERION -->
-    <div class="section-box">
-      <div class="section-title">FILTERING CRITERION</div>
-      <div class="section-body">
-        <div class="form-row">
-          <div class="form-label">Consumer No:</div>
-          <input type="text" id="txtConsumerNo" class="form-input" placeholder="e.g. 825558" />
-          <input type="button" id="btnFetch" class="btn btn-fetch" value="Fetch" />
-          <input type="button" id="btnClear" class="btn btn-clear" value="Clear" />
+    <!-- ============================================== -->
+    <!-- VIEW 1: CM-16 BLOCK CONSUMER                   -->
+    <!-- ============================================== -->
+    <div id="viewCm16" style="display: block;">
+      <div class="screen-header">
+        Consumer Management/Block Consumer &nbsp;&nbsp; ScreenCode(CM-16)
+      </div>
+
+      <!-- FILTERING CRITERION -->
+      <div class="section-box">
+        <div class="section-title">FILTERING CRITERION</div>
+        <div class="section-body">
+          <div class="form-row">
+            <div class="form-label">Consumer No:</div>
+            <input type="text" id="txtConsumerNo" class="form-input" placeholder="e.g. 825558" />
+            <input type="button" id="btnFetch" class="btn btn-fetch" value="Fetch" />
+            <input type="button" id="btnClear" class="btn btn-clear" value="Clear" />
+          </div>
+        </div>
+      </div>
+
+      <!-- CONSUMER DETAILS (EXPANDED ON FETCH) -->
+      <div id="consumerDetailsBox" class="section-box details-box">
+        <div class="section-title">CONSUMER DETAILS</div>
+        <div class="section-body" id="consumerDetailsText">
+          Name: RAMESH KUMAR &nbsp;|&nbsp; Category: DOMESTIC &nbsp;|&nbsp; Status: ACTIVE
+        </div>
+      </div>
+
+      <!-- BLOCK SECTION -->
+      <div class="section-box">
+        <div class="section-body">
+          <div class="form-row">
+            <div class="form-label">Block Reason</div>
+            <select id="ddlBlockReason" class="form-input" style="width: 250px;">
+              <option value="1">NonKYC-NCTC-NonGIU Block</option>
+              <option value="2">Multiple Connection Block</option>
+              <option value="3">Address Verification Failed</option>
+              <option value="4">Deceased Consumer</option>
+            </select>
+
+            <div class="form-label" style="width: 80px; text-align: right;">Remarks</div>
+            <input type="text" id="txtRemarks" class="form-input" placeholder="Remarks" />
+          </div>
+
+          <div style="text-align: center;">
+            <input type="button" id="btnBlock" class="btn btn-block" value="Block" />
+          </div>
         </div>
       </div>
     </div>
 
-    <!-- CONSUMER DETAILS (EXPANDED ON FETCH) -->
-    <div id="consumerDetailsBox" class="section-box details-box">
-      <div class="section-title">CONSUMER DETAILS</div>
-      <div class="section-body" id="consumerDetailsText">
-        Name: RAMESH KUMAR &nbsp;|&nbsp; Category: DOMESTIC &nbsp;|&nbsp; Status: ACTIVE
+    <!-- ============================================== -->
+    <!-- VIEW 2: CM-43 PFMS BENEFICIARY RETRIGGER       -->
+    <!-- ============================================== -->
+    <div id="viewCm43" style="display: none;">
+      <div class="screen-header">
+        Consumer Management/PFMS Beneficiary Retrigger &nbsp;&nbsp; ScreenCode(CM-43)
       </div>
-    </div>
 
-    <!-- BLOCK SECTION -->
-    <div class="section-box">
-      <div class="section-body">
-        <div class="form-row">
-          <div class="form-label">Block Reason</div>
-          <select id="ddlBlockReason" class="form-input" style="width: 250px;">
-            <option value="1">NonKYC-NCTC-NonGIU Block</option>
-            <option value="2">Multiple Connection Block</option>
-            <option value="3">Address Verification Failed</option>
-            <option value="4">Deceased Consumer</option>
-          </select>
-
-          <div class="form-label" style="width: 80px; text-align: right;">Remarks</div>
-          <input type="text" id="txtRemarks" class="form-input" placeholder="Remarks" />
+      <!-- FILTERING CRITERION -->
+      <div class="section-box">
+        <div class="section-title">SEARCH CONSUMER FOR PFMS</div>
+        <div class="section-body">
+          <div class="form-row">
+            <div class="form-label">Consumer No :</div>
+            <input type="text" id="txtPfmsConsumerNo" class="form-input" placeholder="e.g. 825558" />
+            <input type="button" id="btnPfmsSearch" class="btn btn-fetch" value="Search" />
+          </div>
         </div>
+      </div>
 
-        <div style="text-align: center;">
-          <input type="button" id="btnBlock" class="btn btn-block" value="Block" />
+      <!-- PFMS BENEFICIARY DETAILS (EXPANDED ON SEARCH) -->
+      <div id="pfmsDetailsBox" class="section-box details-box">
+        <div class="section-title">PFMS BENEFICIARY STATUS</div>
+        <div class="section-body">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Consumer No</th>
+                <th>Consumer Name</th>
+                <th>Aadhaar Status</th>
+                <th>Bank Status</th>
+                <th>PFMS Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td id="pfmsCellConsumerNo">825558</td>
+                <td id="pfmsCellName">SURESH YADAV</td>
+                <td><span style="color: green; font-weight: bold;">LINKED</span></td>
+                <td><span style="color: green; font-weight: bold;">VERIFIED</span></td>
+                <td><span style="color: orange; font-weight: bold;">RETRIGGER REQUIRED</span></td>
+              </tr>
+            </tbody>
+          </table>
+
+          <div style="text-align: center; margin-top: 15px;">
+            <input type="button" id="btnPfmsRetrigger" class="btn btn-block" style="background: #28a745; border-color: #1e7e34;" value="Retrigger PFMS Request" />
+          </div>
         </div>
       </div>
     </div>
@@ -187,7 +286,27 @@
   </div>
 
   <script>
-    // Simulate portal behavior
+    // Simulator Tab Switcher
+    function switchSimulatorScreen(code) {
+      const v16 = document.getElementById('viewCm16');
+      const v43 = document.getElementById('viewCm43');
+      const b16 = document.getElementById('simBtnCm16');
+      const b43 = document.getElementById('simBtnCm43');
+
+      if (code === 'CM-43') {
+        v16.style.display = 'none';
+        v43.style.display = 'block';
+        b43.className = 'sim-tab-btn sim-tab-active';
+        b16.className = 'sim-tab-btn sim-tab-inactive';
+      } else {
+        v16.style.display = 'block';
+        v43.style.display = 'none';
+        b16.className = 'sim-tab-btn sim-tab-active';
+        b43.className = 'sim-tab-btn sim-tab-inactive';
+      }
+    }
+
+    // CM-16 Behavior
     const txtConsumerNo = document.getElementById('txtConsumerNo');
     const btnFetch = document.getElementById('btnFetch');
     const btnClear = document.getElementById('btnClear');
@@ -202,21 +321,16 @@
         alert('Please enter Consumer Number');
         return;
       }
-
-      // Simulate simulated error for consumer 999999
       if (val === '999999') {
         alert('Consumer Number does not exist!');
         detailsBox.style.display = 'none';
         return;
       }
-
-      // Simulate already blocked for 888888
       if (val === '888888') {
         alert('Consumer is already in Blocked status!');
         detailsBox.style.display = 'none';
         return;
       }
-
       detailsBox.style.display = 'block';
       document.getElementById('consumerDetailsText').innerHTML = 
         `Consumer No: <strong>${val}</strong> | Name: TEST USER ${val} | Status: ACTIVE`;
@@ -240,6 +354,46 @@
         detailsBox.style.display = 'none';
         txtConsumerNo.value = '';
         txtRemarks.value = '';
+      }
+    });
+
+    // CM-43 Behavior (PFMS Beneficiary Retrigger)
+    const txtPfmsConsumerNo = document.getElementById('txtPfmsConsumerNo');
+    const btnPfmsSearch = document.getElementById('btnPfmsSearch');
+    const pfmsDetailsBox = document.getElementById('pfmsDetailsBox');
+    const btnPfmsRetrigger = document.getElementById('btnPfmsRetrigger');
+    const pfmsCellConsumerNo = document.getElementById('pfmsCellConsumerNo');
+    const pfmsCellName = document.getElementById('pfmsCellName');
+
+    btnPfmsSearch.addEventListener('click', () => {
+      const val = txtPfmsConsumerNo.value.trim();
+      if (!val) {
+        alert('Please enter Consumer No');
+        return;
+      }
+      if (val === '999999') {
+        alert('Consumer record not found for PFMS Retrigger!');
+        pfmsDetailsBox.style.display = 'none';
+        return;
+      }
+      if (val === '888888') {
+        alert('PFMS status already accepted by bank. Retrigger not allowed.');
+        pfmsDetailsBox.style.display = 'none';
+        return;
+      }
+
+      pfmsCellConsumerNo.textContent = val;
+      pfmsCellName.textContent = `BENEFICIARY ${val}`;
+      pfmsDetailsBox.style.display = 'block';
+    });
+
+    btnPfmsRetrigger.addEventListener('click', () => {
+      const val = txtPfmsConsumerNo.value.trim();
+      const confirmed = confirm(`Are you sure you want to retrigger PFMS request for consumer ${val}?`);
+      if (confirmed) {
+        alert(`PFMS Request for Consumer ${val} Retriggered Successfully!`);
+        pfmsDetailsBox.style.display = 'none';
+        txtPfmsConsumerNo.value = '';
       }
     });
   </script>

@@ -38,6 +38,7 @@
   let lastCapturedAlert = '';
   let lastCapturedConfirm = '';
   let logsData = [];
+  let activeMode = 'CM-16';
 
   window.addEventListener('message', function(event) {
     if (event.data && event.data.source === 'CDCMS_BLOCKER_INJECTED') {
@@ -185,25 +186,99 @@
       const el = document.querySelector('[id*="lblMsg" i], [id*="lblMessage" i], [id*="lblError" i], [id*="lblSuccess" i], .alert-danger, .alert-success');
       if (el && el.innerText.trim()) return el.innerText.trim();
       return null;
+    },
+
+    // PFMS Beneficiary Retrigger DOM Finders (ScreenCode CM-43)
+    getPfmsConsumerNoInput: function() {
+      // 1. Common IDs for PFMS Consumer No input
+      const byId = document.querySelector('input[id*="ConsumerNo" i], input[name*="ConsumerNo" i], input[id*="txtConsumer" i]');
+      if (byId && byId.offsetParent !== null && !byId.disabled && !byId.readOnly) return byId;
+
+      // 2. Look near text "Consumer No"
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+      let node;
+      while (node = walker.nextNode()) {
+        if (node.nodeValue && node.nodeValue.toLowerCase().includes('consumer no')) {
+          const container = node.parentElement.closest('tr, td, div, p');
+          if (container) {
+            const inp = container.querySelector('input[type="text"], input:not([type])');
+            if (inp && inp.offsetParent !== null) return inp;
+            const next = container.nextElementSibling;
+            if (next) {
+              const nextInp = next.querySelector('input[type="text"], input:not([type])');
+              if (nextInp && nextInp.offsetParent !== null) return nextInp;
+            }
+          }
+        }
+      }
+      return DOMFinder.getConsumerNoInput();
+    },
+
+    getPfmsSearchButton: function() {
+      // 1. By ID / Name
+      const byId = document.querySelector('input[id*="btnSearch" i], button[id*="btnSearch" i], [name*="btnSearch" i], input[id*="Search" i]');
+      if (byId && byId.offsetParent !== null) return byId;
+
+      // 2. By Value or Text
+      const buttons = document.querySelectorAll('input[type="button"], input[type="submit"], button');
+      for (const btn of buttons) {
+        const val = (btn.value || btn.innerText || '').trim().toLowerCase();
+        if (val === 'search' || val.startsWith('search')) {
+          if (btn.offsetParent !== null) return btn;
+        }
+      }
+      return null;
+    },
+
+    getPfmsRetriggerButton: function() {
+      // 1. By Value or Text containing "retrigger"
+      const buttons = document.querySelectorAll('input[type="button"], input[type="submit"], button, a.btn');
+      for (const btn of buttons) {
+        const val = (btn.value || btn.innerText || '').trim().toLowerCase();
+        if (val.includes('retrigger')) {
+          if (btn.offsetParent !== null) return btn;
+        }
+      }
+
+      // 2. By ID / Name
+      const byId = document.querySelector('[id*="Retrigger" i], [name*="Retrigger" i], [id*="btnPFMS" i]');
+      if (byId && byId.offsetParent !== null) return byId;
+
+      return null;
     }
   };
 
   // Helper sleep
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Check if current page is specifically the Block Consumer screen (CM-16)
-  function isBlockConsumerPage() {
+  // Detect which screen the user is currently on (CM-16 Block Consumer or CM-43 PFMS Retrigger)
+  function detectPageScreen() {
     const url = window.location.href.toLowerCase();
-    // Match only the exact BlockConsumer page or offline simulator
-    if (url.includes('blockconsumer.aspx') || url.includes('test_cdcms_page')) {
-      return true;
-    }
-    // Strict screen code check for CM-16
     const pageText = (document.body ? document.body.innerText : '');
-    if (pageText.includes('ScreenCode(CM-16)') || pageText.includes('ScreenCode (CM-16)')) {
+
+    // CM-43: PFMS Beneficiary Retrigger
+    if (url.includes('pfmsbeneficiaryretrigger') || url.includes('pfmsb') || 
+        pageText.includes('ScreenCode(CM-43)') || pageText.includes('ScreenCode (CM-43)') || 
+        pageText.includes('PFMS BENEFICIARY RETRIGGER')) {
+      return 'CM-43';
+    }
+
+    // CM-16: Block Consumer
+    if (url.includes('blockconsumer.aspx') || url.includes('test_cdcms_page') || 
+        pageText.includes('ScreenCode(CM-16)') || pageText.includes('ScreenCode (CM-16)') ||
+        pageText.includes('BLOCK CONSUMER')) {
+      return 'CM-16';
+    }
+
+    return null;
+  }
+
+  function isSupportedPage() {
+    const url = window.location.href.toLowerCase();
+    if (url.includes('dcmsglobal') || url.includes('dcms') || url.includes('hpcl.co.in') || url.includes('test_cdcms_page')) {
       return true;
     }
-    return false;
+    return detectPageScreen() !== null;
   }
 
   // Minimize floating panel to bottom-right pill
@@ -267,8 +342,8 @@
 
   // Build Floating UI Panel
   function createUI(forceOpen = false) {
-    // Only open on Block Consumer screen unless explicitly requested by user
-    if (!forceOpen && !isBlockConsumerPage()) {
+    // Only open on supported CDCMS screens unless explicitly requested by user
+    if (!forceOpen && !isSupportedPage()) {
       const existing = document.getElementById('cdcms-blocker-root');
       if (existing) existing.style.display = 'none';
       return;
@@ -280,6 +355,14 @@
       const existing = document.getElementById('cdcms-blocker-root');
       if (existing) existing.style.display = 'none';
       return;
+    }
+
+    // Auto-detect screen or restore saved mode preference
+    const detectedScreen = detectPageScreen();
+    if (detectedScreen) {
+      activeMode = detectedScreen;
+    } else {
+      activeMode = localStorage.getItem('cdcms_active_screen_mode') || 'CM-16';
     }
 
     if (document.getElementById('cdcms-blocker-root')) {
@@ -323,8 +406,8 @@
         <div class="cdcms-panel-header" id="cdcms-panel-drag">
           <div class="cdcms-header-title">
             ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-logo-icon" alt="RS" />` : ''}
-            <span>HP Gas CDCMS Blocker</span>
-            <span class="cdcms-badge">CM-16</span>
+            <span id="cdcms-panel-title">${activeMode === 'CM-43' ? 'HP Gas PFMS Retrigger' : 'HP Gas CDCMS Blocker'}</span>
+            <span class="cdcms-badge" id="cdcms-screen-badge">${activeMode}</span>
             <span class="cdcms-badge" id="cdcms-ver-badge" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 10px;" title="Extension Version">v1.0.0</span>
           </div>
           <div class="cdcms-header-actions">
@@ -397,6 +480,16 @@
 
           <!-- Main Automation Form (Unlocked on Active License) -->
           <div id="cdcms-main-form" style="display: none; flex-direction: column; gap: 12px;">
+            <!-- Dual Mode Tabs -->
+            <div class="cdcms-mode-tabs" id="cdcms-mode-tabs">
+              <button type="button" class="cdcms-mode-tab ${activeMode === 'CM-16' ? 'active' : ''}" data-mode="CM-16">
+                ${ICONS.SHIELD} Block Consumer (CM-16)
+              </button>
+              <button type="button" class="cdcms-mode-tab ${activeMode === 'CM-43' ? 'active' : ''}" data-mode="CM-43">
+                ${ICONS.REFRESH} PFMS Retrigger (CM-43)
+              </button>
+            </div>
+
             <div class="cdcms-form-group">
               <div class="cdcms-label">
                 <span>Consumer Numbers (Paste List)</span>
@@ -408,7 +501,8 @@
               <textarea id="cdcms-consumer-list" class="cdcms-textarea" placeholder="Paste Consumer Numbers here (one per line, comma or space separated)&#10;825558&#10;825559&#10;825560..."></textarea>
             </div>
 
-            <div class="cdcms-row-2">
+            <!-- Block options row (Hidden in CM-43 PFMS mode) -->
+            <div id="cdcms-block-options-row" class="cdcms-row-2" style="display: ${activeMode === 'CM-43' ? 'none' : 'grid'};">
               <div class="cdcms-form-group">
                 <label class="cdcms-label">Block Reason</label>
                 <select id="cdcms-block-reason" class="cdcms-select">
@@ -439,7 +533,7 @@
 
             <div class="cdcms-actions">
               <button id="cdcms-start-btn" class="cdcms-btn cdcms-btn-primary">
-                ${ICONS.PLAY} Start Blocking
+                ${ICONS.PLAY} <span id="cdcms-start-btn-text">${activeMode === 'CM-43' ? 'Start Retrigger' : 'Start Blocking'}</span>
               </button>
               <button id="cdcms-pause-btn" class="cdcms-btn cdcms-btn-warning" disabled>
                 ${ICONS.PAUSE} Pause
@@ -459,7 +553,7 @@
               </div>
               <div class="cdcms-stat-item">
                 <span class="cdcms-stat-val success" id="cdcms-stat-success">0</span>
-                <span class="cdcms-stat-lbl">Blocked</span>
+                <span class="cdcms-stat-lbl" id="cdcms-stat-lbl-success">${activeMode === 'CM-43' ? 'Retriggered' : 'Blocked'}</span>
               </div>
               <div class="cdcms-stat-item">
                 <span class="cdcms-stat-val failed" id="cdcms-stat-failed">0</span>
@@ -630,6 +724,48 @@
     }
   }
 
+  // Switch between CM-16 (Block Consumer) and CM-43 (PFMS Beneficiary Retrigger) modes
+  function switchMode(newMode) {
+    activeMode = newMode;
+    localStorage.setItem('cdcms_active_screen_mode', newMode);
+
+    const tabs = document.querySelectorAll('.cdcms-mode-tab');
+    tabs.forEach(tab => {
+      if (tab.getAttribute('data-mode') === newMode) {
+        tab.classList.add('active');
+      } else {
+        tab.classList.remove('active');
+      }
+    });
+
+    const panelTitle = document.getElementById('cdcms-panel-title');
+    const screenBadge = document.getElementById('cdcms-screen-badge');
+    const blockRow = document.getElementById('cdcms-block-options-row');
+    const startBtnText = document.getElementById('cdcms-start-btn-text');
+    const statLblSuccess = document.getElementById('cdcms-stat-lbl-success');
+    const launcherLabel = document.getElementById('cdcms-launcher-label');
+
+    if (newMode === 'CM-43') {
+      if (panelTitle) panelTitle.textContent = 'HP Gas PFMS Retrigger';
+      if (screenBadge) screenBadge.textContent = 'CM-43';
+      if (blockRow) blockRow.style.display = 'none';
+      if (startBtnText) startBtnText.textContent = 'Start Retrigger';
+      if (statLblSuccess) statLblSuccess.textContent = 'Retriggered';
+      if (launcherLabel && !launcherLabel.textContent.includes('Retriggering') && !launcherLabel.textContent.includes('Blocking')) {
+        launcherLabel.innerHTML = `${ICONS.REFRESH} PFMS Retrigger`;
+      }
+    } else {
+      if (panelTitle) panelTitle.textContent = 'HP Gas CDCMS Blocker';
+      if (screenBadge) screenBadge.textContent = 'CM-16';
+      if (blockRow) blockRow.style.display = 'grid';
+      if (startBtnText) startBtnText.textContent = 'Start Blocking';
+      if (statLblSuccess) statLblSuccess.textContent = 'Blocked';
+      if (launcherLabel && !launcherLabel.textContent.includes('Retriggering') && !launcherLabel.textContent.includes('Blocking')) {
+        launcherLabel.innerHTML = `${ICONS.BOLT} CDCMS Auto-Blocker`;
+      }
+    }
+  }
+
   function setupUIListeners() {
     const launcher = document.getElementById('cdcms-launcher-btn');
     const panel = document.getElementById('cdcms-panel');
@@ -642,6 +778,17 @@
     const clearLogBtn = document.getElementById('cdcms-clear-log');
     const downloadBtn = document.getElementById('cdcms-download-report');
     const copyFailedBtn = document.getElementById('cdcms-copy-failed');
+
+    // Dual Mode Switcher Tabs
+    const modeTabs = document.querySelectorAll('.cdcms-mode-tab');
+    modeTabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const mode = tab.getAttribute('data-mode');
+        if (mode && mode !== activeMode) {
+          switchMode(mode);
+        }
+      });
+    });
 
     // Restore saved consumer list text so it NEVER disappears on refresh
     const savedText = localStorage.getItem('cdcms_consumer_raw_text');
@@ -699,7 +846,13 @@
     });
 
     // Start / Pause / Stop
-    startBtn.addEventListener('click', startAutomation);
+    startBtn.addEventListener('click', () => {
+      if (activeMode === 'CM-43') {
+        startPfmsAutomation();
+      } else {
+        startAutomation();
+      }
+    });
     pauseBtn.addEventListener('click', togglePause);
     stopBtn.addEventListener('click', stopAutomation);
 
@@ -925,6 +1078,7 @@
     const remarksValue = document.getElementById('cdcms-remarks').value.trim() || 'ekyc pending';
 
     const job = {
+      mode: 'CM-16',
       isRunning: true,
       isPaused: false,
       consumerList: consumerList,
@@ -960,6 +1114,262 @@
     runNextInJob();
   }
 
+  // Start PFMS Automation (CM-43)
+  function startPfmsAutomation() {
+    // Strict License Verification Guard
+    const currentLic = typeof LicenseManager !== 'undefined' ? LicenseManager.getStoredLicense() : null;
+    if (!currentLic || !currentLic.valid) {
+      alert('Access Denied: Please activate a valid License Key to start PFMS retriggering.');
+      const lockScreen = document.getElementById('cdcms-lock-screen');
+      const mainForm = document.getElementById('cdcms-main-form');
+      if (lockScreen) lockScreen.style.display = 'flex';
+      if (mainForm) mainForm.style.display = 'none';
+      return;
+    }
+
+    const textarea = document.getElementById('cdcms-consumer-list');
+    const consumerList = parseConsumerList(textarea.value);
+
+    if (consumerList.length === 0) {
+      alert('Please paste at least one valid numeric Consumer Number in the box.');
+      return;
+    }
+
+    // Save text so it never disappears
+    localStorage.setItem('cdcms_consumer_raw_text', textarea.value);
+
+    const delayMs = parseInt(document.getElementById('cdcms-delay').value, 10) || 2500;
+
+    const job = {
+      mode: 'CM-43',
+      isRunning: true,
+      isPaused: false,
+      consumerList: consumerList,
+      currentIndex: 0,
+      total: consumerList.length,
+      successCount: 0,
+      failedCount: 0,
+      delayMs,
+      stage: 'IDLE',
+      currentConsumer: ''
+    };
+    saveJob(job);
+
+    const startBtn = document.getElementById('cdcms-start-btn');
+    const pauseBtn = document.getElementById('cdcms-pause-btn');
+    const stopBtn = document.getElementById('cdcms-stop-btn');
+    const statusIndicator = document.getElementById('cdcms-status-indicator');
+
+    if (startBtn) startBtn.disabled = true;
+    if (pauseBtn) pauseBtn.disabled = false;
+    if (stopBtn) stopBtn.disabled = false;
+    if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #16a34a;">● Retriggering...</span>';
+
+    updateCounters(job.total, 0, 0, job.total);
+    addLog('', 'INFO', `Started PFMS Retrigger for ${job.total} consumers.`, 'info');
+
+    // Auto-minimize down to the bottom pill so user has a full unobstructed view of the page
+    minimizeToBottom();
+
+    runNextPfmsJob();
+  }
+
+  // Run next consumer in PFMS Retrigger active job
+  async function runNextPfmsJob() {
+    const job = getSavedJob();
+    if (!job || !job.isRunning) return;
+
+    const statusIndicator = document.getElementById('cdcms-status-indicator');
+    const launcherBtn = document.getElementById('cdcms-launcher-btn');
+    const launcherLabel = document.getElementById('cdcms-launcher-label');
+
+    if (job.isPaused) {
+      if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #f59e0b;">⏸ Paused</span>';
+      return;
+    }
+
+    if (job.currentIndex >= job.consumerList.length) {
+      job.isRunning = false;
+      saveJob(job);
+      const startBtn = document.getElementById('cdcms-start-btn');
+      const pauseBtn = document.getElementById('cdcms-pause-btn');
+      const stopBtn = document.getElementById('cdcms-stop-btn');
+      if (startBtn) startBtn.disabled = false;
+      if (pauseBtn) pauseBtn.disabled = true;
+      if (stopBtn) stopBtn.disabled = true;
+      if (statusIndicator) statusIndicator.innerHTML = `<span style="color: #0284c7; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} PFMS Completed</span>`;
+      addLog('', 'INFO', `Finished PFMS! Total: ${job.total}, Retriggered: ${job.successCount}, Failed: ${job.failedCount}`, 'info');
+
+      if (launcherBtn) launcherBtn.classList.remove('is-running');
+      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.CHECK} Retriggered (${job.successCount} OK, ${job.failedCount} Fail)`;
+      return;
+    }
+
+    const consumerNo = job.consumerList[job.currentIndex];
+    job.currentConsumer = consumerNo;
+    saveJob(job);
+
+    if (statusIndicator) {
+      statusIndicator.innerHTML = `<span style="color: #16a34a;">● Processing (${job.currentIndex + 1}/${job.total}): ${consumerNo}</span>`;
+    }
+
+    if (launcherBtn) launcherBtn.classList.add('is-running');
+    if (launcherLabel) {
+      launcherLabel.innerHTML = `${ICONS.REFRESH} Retriggering (${job.currentIndex + 1}/${job.total})`;
+    }
+
+    lastCapturedAlert = '';
+    lastCapturedConfirm = '';
+
+    // Step 1: Input Consumer No
+    const consumerInput = DOMFinder.getPfmsConsumerNoInput();
+    if (!consumerInput) {
+      job.failedCount++;
+      addLog(consumerNo, 'FAILED', 'Consumer No input not found on page', 'error');
+      job.currentIndex++;
+      saveJob(job);
+      updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+      await sleep(job.delayMs || 2500);
+      runNextPfmsJob();
+      return;
+    }
+
+    consumerInput.focus();
+    consumerInput.value = consumerNo;
+    triggerChangeEvent(consumerInput);
+    await sleep(300);
+
+    // Step 2: Set stage to PFMS_SEARCHING and click Search
+    job.stage = 'PFMS_SEARCHING';
+    saveJob(job);
+
+    const searchBtn = DOMFinder.getPfmsSearchButton();
+    if (!searchBtn) {
+      job.failedCount++;
+      addLog(consumerNo, 'FAILED', 'Search button not found on page', 'error');
+      job.currentIndex++;
+      job.stage = 'IDLE';
+      saveJob(job);
+      updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+      await sleep(job.delayMs || 2500);
+      runNextPfmsJob();
+      return;
+    }
+
+    searchBtn.click();
+
+    // If Search is AJAX (no reload), poll for result
+    let waitIntervals = 0;
+    while (waitIntervals < 16) {
+      await sleep(250);
+      waitIntervals++;
+
+      const freshJob = getSavedJob();
+      if (!freshJob || !freshJob.isRunning) return; // stopped
+
+      let alertMsg = lastCapturedAlert || DOMFinder.getMessageLabel();
+      if (alertMsg) {
+        lastCapturedAlert = '';
+        job.failedCount++;
+        addLog(consumerNo, 'FAILED', alertMsg, 'error');
+        job.currentIndex++;
+        job.stage = 'IDLE';
+        saveJob(job);
+        updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+        await sleep(job.delayMs || 2500);
+        runNextPfmsJob();
+        return;
+      }
+
+      const retriggerBtn = DOMFinder.getPfmsRetriggerButton();
+      if (retriggerBtn && !retriggerBtn.disabled) {
+        await executePfmsRetriggerStep(job);
+        return;
+      }
+    }
+
+    // Retrigger button did not appear within timeout
+    job.failedCount++;
+    addLog(consumerNo, 'FAILED', 'Retrigger button not found after Search', 'error');
+    job.currentIndex++;
+    job.stage = 'IDLE';
+    saveJob(job);
+    updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+    await sleep(job.delayMs || 2500);
+    runNextPfmsJob();
+  }
+
+  // Execute PFMS Retrigger Step (Click Retrigger PFMS Request)
+  async function executePfmsRetriggerStep(job) {
+    const consumerNo = job.currentConsumer;
+    await sleep(400);
+
+    const retriggerBtn = DOMFinder.getPfmsRetriggerButton();
+    if (!retriggerBtn) {
+      job.failedCount++;
+      addLog(consumerNo, 'FAILED', 'Retrigger button not found', 'error');
+      job.currentIndex++;
+      job.stage = 'IDLE';
+      saveJob(job);
+      updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+      await sleep(job.delayMs || 2500);
+      runNextPfmsJob();
+      return;
+    }
+
+    job.stage = 'PFMS_RETRIGGERING';
+    saveJob(job);
+
+    lastCapturedAlert = '';
+    lastCapturedConfirm = '';
+    retriggerBtn.click();
+
+    // If Retrigger is AJAX (no reload):
+    let waitRetrigger = 0;
+    while (waitRetrigger < 16) {
+      await sleep(250);
+      waitRetrigger++;
+
+      const freshJob = getSavedJob();
+      if (!freshJob || !freshJob.isRunning) return; // stopped
+
+      let alertMsg = lastCapturedAlert || DOMFinder.getMessageLabel();
+      if (alertMsg) {
+        lastCapturedAlert = '';
+        const lower = alertMsg.toLowerCase();
+        const hasSuccess = lower.includes('success') || lower.includes('retrigger') || lower.includes('initiated') || lower.includes('processed');
+        const hasFailure = lower.includes('error') || lower.includes('failed') || lower.includes('not allow') || lower.includes('already');
+        const isSuccess = (hasSuccess && !hasFailure) || (!hasFailure && !hasSuccess);
+
+        if (isSuccess) {
+          job.successCount++;
+          addLog(consumerNo, 'SUCCESS', alertMsg || 'PFMS Retriggered successfully', 'success');
+        } else {
+          job.failedCount++;
+          addLog(consumerNo, 'FAILED', alertMsg, 'error');
+        }
+
+        job.currentIndex++;
+        job.stage = 'IDLE';
+        saveJob(job);
+        updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+        await sleep(job.delayMs || 2500);
+        runNextPfmsJob();
+        return;
+      }
+    }
+
+    // Timed out with no alert - consider success
+    job.successCount++;
+    addLog(consumerNo, 'SUCCESS', 'PFMS Retrigger submitted', 'success');
+    job.currentIndex++;
+    job.stage = 'IDLE';
+    saveJob(job);
+    updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+    await sleep(job.delayMs || 2500);
+    runNextPfmsJob();
+  }
+
   // Check and resume active job after page reload
   async function checkAndResumeJob() {
     const job = getSavedJob();
@@ -976,6 +1386,12 @@
 
     console.log('[CDCMS Blocker] Resuming active job from storage:', job);
 
+    if (job.mode === 'CM-43') {
+      switchMode('CM-43');
+    } else {
+      switchMode('CM-16');
+    }
+
     const startBtn = document.getElementById('cdcms-start-btn');
     const pauseBtn = document.getElementById('cdcms-pause-btn');
     const stopBtn = document.getElementById('cdcms-stop-btn');
@@ -988,6 +1404,70 @@
     updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
 
     await sleep(800);
+
+    // Resume CM-43 (PFMS Retrigger)
+    if (job.mode === 'CM-43') {
+      if (job.stage === 'PFMS_SEARCHING') {
+        const consumerNo = job.currentConsumer;
+        let alertMsg = lastCapturedAlert || DOMFinder.getMessageLabel();
+        if (alertMsg) {
+          lastCapturedAlert = '';
+          job.failedCount++;
+          addLog(consumerNo, 'FAILED', alertMsg, 'error');
+          job.currentIndex++;
+          job.stage = 'IDLE';
+          saveJob(job);
+          updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+          await sleep(job.delayMs || 2500);
+          runNextPfmsJob();
+          return;
+        }
+
+        const retriggerBtn = DOMFinder.getPfmsRetriggerButton();
+        if (retriggerBtn && !retriggerBtn.disabled) {
+          await executePfmsRetriggerStep(job);
+          return;
+        } else {
+          job.failedCount++;
+          addLog(consumerNo, 'FAILED', 'Retrigger button not found after page reload', 'error');
+          job.currentIndex++;
+          job.stage = 'IDLE';
+          saveJob(job);
+          updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+          await sleep(job.delayMs || 2500);
+          runNextPfmsJob();
+          return;
+        }
+      } else if (job.stage === 'PFMS_RETRIGGERING') {
+        const consumerNo = job.currentConsumer;
+        let alertMsg = lastCapturedAlert || DOMFinder.getMessageLabel();
+        lastCapturedAlert = '';
+
+        const lower = (alertMsg || '').toLowerCase();
+        const hasSuccess = lower.includes('success') || lower.includes('retrigger') || lower.includes('initiated');
+        const hasFailure = lower.includes('error') || lower.includes('failed') || lower.includes('already') || lower.includes('not allow');
+        const isSuccess = (hasSuccess && !hasFailure) || (!alertMsg);
+
+        if (isSuccess) {
+          job.successCount++;
+          addLog(consumerNo, 'SUCCESS', alertMsg || 'PFMS Retriggered successfully', 'success');
+        } else {
+          job.failedCount++;
+          addLog(consumerNo, 'FAILED', alertMsg || 'PFMS Retrigger failed', 'error');
+        }
+
+        job.currentIndex++;
+        job.stage = 'IDLE';
+        saveJob(job);
+        updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+        await sleep(job.delayMs || 2500);
+        runNextPfmsJob();
+        return;
+      } else {
+        runNextPfmsJob();
+        return;
+      }
+    }
 
     if (job.stage === 'FETCHING') {
       const consumerNo = job.currentConsumer;
@@ -1325,8 +1805,16 @@
       }
       if (statusIndicator) statusIndicator.innerHTML = '<span style="color: #16a34a;">● Resuming...</span>';
       if (launcherBtn) launcherBtn.classList.add('is-running');
-      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.BOLT} Blocking (${job.currentIndex + 1}/${job.total})`;
-      runNextInJob();
+      if (launcherLabel) {
+        launcherLabel.innerHTML = (job.mode === 'CM-43')
+          ? `${ICONS.REFRESH} Retriggering (${job.currentIndex + 1}/${job.total})`
+          : `${ICONS.BOLT} Blocking (${job.currentIndex + 1}/${job.total})`;
+      }
+      if (job.mode === 'CM-43') {
+        runNextPfmsJob();
+      } else {
+        runNextInJob();
+      }
     }
   }
 
@@ -1351,7 +1839,11 @@
     const launcherBtn = document.getElementById('cdcms-launcher-btn');
     const launcherLabel = document.getElementById('cdcms-launcher-label');
     if (launcherBtn) launcherBtn.classList.remove('is-running');
-    if (launcherLabel) launcherLabel.innerHTML = `${ICONS.BOLT} CDCMS Auto-Blocker`;
+    if (launcherLabel) {
+      launcherLabel.innerHTML = (activeMode === 'CM-43')
+        ? `${ICONS.REFRESH} PFMS Retrigger`
+        : `${ICONS.BOLT} CDCMS Auto-Blocker`;
+    }
   }
 
   // Reset all data and clear form for a new batch
@@ -1397,7 +1889,7 @@
       logBox.innerHTML = `
         <div class="cdcms-log-item info">
           <span class="cdcms-log-time">[System]</span>
-          <span>Data reset complete. Paste new consumer numbers and click 'Start Blocking'.</span>
+          <span>Data reset complete. Paste new consumer numbers and click Start.</span>
         </div>
       `;
     }
@@ -1421,12 +1913,14 @@
     if (stopBtn) stopBtn.disabled = true;
 
     // 8. Clear CDCMS webpage inputs if present
-    const pageConsumerInp = DOMFinder.getConsumerNoInput();
+    const pageConsumerInp = (activeMode === 'CM-43')
+      ? DOMFinder.getPfmsConsumerNoInput()
+      : DOMFinder.getConsumerNoInput();
     if (pageConsumerInp) {
       pageConsumerInp.value = '';
     }
     const clearBtn = DOMFinder.getClearButton();
-    if (clearBtn) {
+    if (clearBtn && activeMode === 'CM-16') {
       clearBtn.click();
     }
   }
@@ -1446,10 +1940,11 @@
       csvContent += `"${row.consumerNo}","${row.status}","${cleanMsg}","${row.time}"\r\n`;
     });
 
+    const prefix = (activeMode === 'CM-43') ? 'PFMS_Retrigger_Report_' : 'CDCMS_Block_Report_';
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `CDCMS_Block_Report_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `${prefix}${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);

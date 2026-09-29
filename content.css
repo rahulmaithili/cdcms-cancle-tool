@@ -319,6 +319,46 @@
   gap: 12px;
 }
 
+/* Dual Mode Switcher Tabs */
+.cdcms-mode-tabs {
+  display: flex;
+  background: #f1f5f9;
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  gap: 4px;
+}
+
+.cdcms-mode-tab {
+  flex: 1;
+  border: none;
+  background: transparent;
+  padding: 6px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #64748b;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  user-select: none;
+}
+
+.cdcms-mode-tab:hover {
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.cdcms-mode-tab.active {
+  background: #0284c7;
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+}
+
 /* Form Groups */
 .cdcms-form-group {
   display: flex;
