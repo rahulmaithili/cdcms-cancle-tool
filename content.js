@@ -469,14 +469,12 @@
           </div>
 
           <!-- Auto-Update Notification Banner (Appears when new version found) -->
-          <div id="cdcms-update-banner" class="cdcms-update-alert" style="display: none;">
-            <div class="cdcms-update-alert-content">
-              <span><strong>New Version <span id="cdcms-update-ver-label">v1.0.1</span> Available!</strong></span>
-              <div style="font-size: 10px; opacity: 0.9; margin-top: 2px;">Run update.bat in your tool folder to update.</div>
+          <div id="cdcms-update-banner" class="cdcms-update-alert" style="display: none; align-items: center; justify-content: space-between;">
+            <div class="cdcms-update-alert-content" style="flex: 1;">
+              <span><strong>New Version <span id="cdcms-update-ver-label">v1.2.0</span> Available!</strong></span>
+              <div style="font-size: 10px; opacity: 0.95; margin-top: 2px;">Tool folder me <b>update.bat</b> par double-click karein, fir page refresh karein.</div>
             </div>
-            <div style="display: flex; gap: 6px; align-items: center;">
-              <a href="https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip" class="cdcms-update-dl-btn" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.DOWNLOAD} Download Update</a>
-            </div>
+            <button type="button" id="cdcms-dismiss-banner-btn" class="cdcms-btn-icon" style="color: #ffffff; padding: 2px; font-size: 12px; margin-left: 8px;" title="Dismiss">${ICONS.CLOSE}</button>
           </div>
 
           <!-- Lock Screen (When License Inactive) -->
@@ -924,6 +922,14 @@
     if (ghCheckBtn) {
       ghCheckBtn.addEventListener('click', () => {
         checkGitHubUpdates(true);
+      });
+    }
+
+    const dismissBannerBtn = document.getElementById('cdcms-dismiss-banner-btn');
+    if (dismissBannerBtn) {
+      dismissBannerBtn.addEventListener('click', () => {
+        const b = document.getElementById('cdcms-update-banner');
+        if (b) b.style.display = 'none';
       });
     }
 

@@ -11,13 +11,14 @@ cd /d "%~dp0"
 where git >nul 2>nul
 if %ERRORLEVEL% equ 0 (
     if exist ".git" (
-        echo [*] Pulling latest software updates...
-        git pull origin main
+        echo [*] Pulling latest software updates from GitHub...
+        git fetch origin main
+        git reset --hard origin/main
         goto finished
     )
 )
 
-echo [*] Downloading latest release package...
+echo [*] Downloading latest release package from GitHub...
 powershell -Command "[Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12; Invoke-WebRequest -Uri 'https://github.com/rahulmaithili/cdcms-cancle-tool/archive/refs/heads/main.zip' -OutFile 'update_temp.zip'"
 
 if not exist "update_temp.zip" (
@@ -32,9 +33,12 @@ powershell -Command "Expand-Archive -Path 'update_temp.zip' -DestinationPath 'up
 :finished
 echo.
 echo ========================================================
-echo   [SUCCESS] Updated to the latest version successfully!
-echo   Next Step: Open chrome://extensions/ in Chrome and
-echo   click the reload (circle arrow) icon on this tool.
+echo   [SUCCESS] Latest Version Successfully Installed!
+echo.
+echo   Agla Step (Final Step):
+echo   1. Chrome me naya tab khol kar type karein: chrome://extensions
+echo   2. "HP Gas CDCMS Automation Tool" ke Reload (circle arrow) par click karein.
+echo   3. CDCMS portal refresh (F5) karein.
 echo ========================================================
 echo.
 pause
