@@ -262,16 +262,15 @@
            url.includes('test_cdcms_page');
   }
 
-  // Get visible page text strictly excluding the extension's own DOM panel to prevent self-matching
+  // Get visible page text strictly excluding the extension's own DOM panel without flickering
   function getPortalPageText() {
-    const root = document.getElementById('cdcms-blocker-root');
-    if (!root) {
-      return document.body ? (document.body.innerText || '') : '';
+    if (!document.body) return '';
+    let text = '';
+    for (const child of document.body.children) {
+      if (child.id !== 'cdcms-blocker-root') {
+        text += ' ' + (child.innerText || '');
+      }
     }
-    const orig = root.style.display;
-    root.style.display = 'none';
-    const text = document.body ? (document.body.innerText || '') : '';
-    root.style.display = orig;
     return text;
   }
 
@@ -1034,8 +1033,11 @@
     const blockerSelect = document.getElementById('cdcms-block-reason');
     if (!pageSelect || !blockerSelect) return;
 
-    // Check if options are already populated
+    // Check if options are already populated and match length to avoid repainting
     if (pageSelect.options && pageSelect.options.length > 1) {
+      if (blockerSelect.options && blockerSelect.options.length === pageSelect.options.length) {
+        return; // Already in sync!
+      }
       blockerSelect.innerHTML = '';
       let defaultSelected = false;
       for (const opt of pageSelect.options) {
