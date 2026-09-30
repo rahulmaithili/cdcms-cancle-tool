@@ -263,17 +263,21 @@
       return 'CM-16';
     }
 
-    // CM-43: PFMS Beneficiary Retrigger
-    if (url.includes('pfmsbeneficiaryretrigger') || url.includes('pfmsb') || 
-        pageText.includes('ScreenCode(CM-43)') || pageText.includes('ScreenCode (CM-43)') || 
-        pageText.includes('PFMS BENEFICIARY RETRIGGER') || pageText.includes('Retrigger PFMS Request')) {
+    // CM-43: PFMS Beneficiary Retrigger (Must strictly match CDCMS CM-43 screen)
+    const isCm43 = pageText.includes('ScreenCode(CM-43)') || 
+                   pageText.includes('ScreenCode (CM-43)') || 
+                   (pageText.includes('PFMS BENEFICIARY RETRIGGER') && pageText.includes('Retrigger PFMS Request')) ||
+                   url.includes('pfmsbeneficiaryretrigger');
+    if (isCm43) {
       return 'CM-43';
     }
 
-    // CM-16: Block Consumer
-    if (url.includes('blockconsumer') || 
-        pageText.includes('ScreenCode(CM-16)') || pageText.includes('ScreenCode (CM-16)') ||
-        (pageText.includes('BLOCK CONSUMER') && (DOMFinder.getBlockButton() !== null || DOMFinder.getBlockReasonSelect() !== null))) {
+    // CM-16: Block Consumer (Must strictly match CDCMS CM-16 screen)
+    const isCm16 = pageText.includes('ScreenCode(CM-16)') || 
+                   pageText.includes('ScreenCode (CM-16)') ||
+                   (pageText.includes('BLOCK CONSUMER') && DOMFinder.getBlockButton() !== null && DOMFinder.getBlockReasonSelect() !== null) ||
+                   (url.includes('blockconsumer') && DOMFinder.getBlockButton() !== null);
+    if (isCm16) {
       return 'CM-16';
     }
 
@@ -291,9 +295,9 @@
     const root = document.getElementById('cdcms-blocker-root');
 
     if (!screen) {
-      // User navigated to another tab/page (e.g. Order Booking, Home, etc.) -> Hide completely!
-      if (root && root.style.display !== 'none') {
-        root.style.display = 'none';
+      // User navigated to another tab/page (e.g. Order Booking, Home, other websites) -> Remove completely from DOM!
+      if (root) {
+        root.remove();
       }
       return;
     }
@@ -441,7 +445,7 @@
             ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-logo-icon" alt="RS" />` : ''}
             <span id="cdcms-panel-title">${activeMode === 'CM-43' ? 'HP Gas PFMS Retrigger' : 'HP Gas CDCMS Blocker'}</span>
             <span class="cdcms-badge" id="cdcms-screen-badge">${activeMode}</span>
-            <span class="cdcms-badge" id="cdcms-ver-badge" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 10px;" title="Extension Version">v1.0.0</span>
+            <span class="cdcms-badge" id="cdcms-ver-badge" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 10px;" title="Extension Version">v1.2.0</span>
           </div>
           <div class="cdcms-header-actions">
             <button class="cdcms-btn-icon" id="cdcms-min-btn" title="Minimize to bottom badge">${ICONS.MINUS}</button>
@@ -460,21 +464,12 @@
           <div id="cdcms-github-bar" class="cdcms-github-bar">
             <div class="cdcms-gh-info">
               <span class="cdcms-gh-tag">Version:</span>
-              <span id="cdcms-gh-cur-ver" class="cdcms-gh-ver">v1.0.0</span>
+              <span id="cdcms-gh-cur-ver" class="cdcms-gh-ver">v1.2.0</span>
               <span id="cdcms-gh-status-text" class="cdcms-gh-status-text">• Up to date</span>
             </div>
             <div class="cdcms-gh-btns">
               <button type="button" id="cdcms-check-gh-btn" class="cdcms-gh-btn" title="Check for latest update" style="display: inline-flex; align-items: center; gap: 4px;">${ICONS.REFRESH} Check Update</button>
             </div>
-          </div>
-
-          <!-- Auto-Update Notification Banner (Appears when new version found) -->
-          <div id="cdcms-update-banner" class="cdcms-update-alert" style="display: none; align-items: center; justify-content: space-between;">
-            <div class="cdcms-update-alert-content" style="flex: 1;">
-              <span><strong>New Version <span id="cdcms-update-ver-label">v1.2.0</span> Available!</strong></span>
-              <div style="font-size: 10px; opacity: 0.95; margin-top: 2px;">Tool folder me <b>update.bat</b> par double-click karein, fir page refresh karein.</div>
-            </div>
-            <button type="button" id="cdcms-dismiss-banner-btn" class="cdcms-btn-icon" style="color: #ffffff; padding: 2px; font-size: 12px; margin-left: 8px;" title="Dismiss">${ICONS.CLOSE}</button>
           </div>
 
           <!-- Lock Screen (When License Inactive) -->
@@ -922,14 +917,6 @@
     if (ghCheckBtn) {
       ghCheckBtn.addEventListener('click', () => {
         checkGitHubUpdates(true);
-      });
-    }
-
-    const dismissBannerBtn = document.getElementById('cdcms-dismiss-banner-btn');
-    if (dismissBannerBtn) {
-      dismissBannerBtn.addEventListener('click', () => {
-        const b = document.getElementById('cdcms-update-banner');
-        if (b) b.style.display = 'none';
       });
     }
 
@@ -2064,7 +2051,7 @@
 
     const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
       ? chrome.runtime.getManifest().version
-      : '1.0.0';
+      : '1.2.0';
 
     if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
     if (badgeVerEl) badgeVerEl.textContent = `v${currentVersion}`;
@@ -2088,17 +2075,14 @@
 
       if (compareVersions(remoteVersion, currentVersion) > 0) {
         if (statusText) {
-          statusText.textContent = `• New v${remoteVersion} Available!`;
+          statusText.textContent = `• New v${remoteVersion} Available! (Run update.bat in tool folder)`;
           statusText.style.color = '#16a34a';
         }
-        if (banner) banner.style.display = 'flex';
-        if (verLabel) verLabel.textContent = `v${remoteVersion}`;
       } else {
         if (statusText) {
           statusText.textContent = isManual ? '• Latest version installed!' : '• Up to date';
           statusText.style.color = '#16a34a';
         }
-        if (banner) banner.style.display = 'none';
         if (isManual) {
           setTimeout(() => {
             if (statusText) statusText.textContent = '• Up to date';
@@ -2127,6 +2111,9 @@
 
   // Initialize once DOM is ready and unified storage is synchronized
   async function initApp() {
+    if (!isSupportedPage()) {
+      return;
+    }
     if (typeof LicenseManager !== 'undefined' && LicenseManager.ready) {
       await LicenseManager.ready();
     }

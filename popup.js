@@ -202,13 +202,11 @@ async function checkGitHubUpdates() {
 async function manualCheckPopupUpdate() {
   const btn = document.getElementById('popup-check-update-btn');
   const msg = document.getElementById('popup-gh-msg');
-  const banner = document.getElementById('popup-update-banner');
-  const verLabel = document.getElementById('popup-update-version');
   const curVerEl = document.getElementById('popup-cur-ver');
 
   const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
     ? chrome.runtime.getManifest().version
-    : '1.0.0';
+    : '1.2.0';
 
   if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
   if (btn) {
