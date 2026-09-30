@@ -251,10 +251,27 @@
   // Helper sleep
   const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
+  // Check if current page is on HP Gas CDCMS portal or test simulator
+  function isCdcmsPortal() {
+    const url = window.location.href.toLowerCase();
+    const host = window.location.hostname.toLowerCase();
+    return host.includes('hpcl.co.in') || 
+           host.includes('cdcms') || 
+           url.includes('dcms') || 
+           url.includes('consumermanagement') ||
+           url.includes('test_cdcms_page');
+  }
+
   // Detect which screen the user is currently on (CM-16 Block Consumer or CM-43 PFMS Retrigger)
   function detectPageScreen() {
+    // 1. Must be on HP Gas CDCMS portal or test simulator (Never on google, youtube, other sites)
+    if (!isCdcmsPortal()) {
+      return null;
+    }
+
     const url = window.location.href.toLowerCase();
-    const pageText = (document.body ? document.body.innerText : '');
+    const pageText = (document.body ? (document.body.innerText || '') : '');
+    const pageHtml = (document.body ? (document.body.innerHTML || '') : '');
 
     // Test simulator page support
     if (url.includes('test_cdcms_page')) {
@@ -263,24 +280,33 @@
       return 'CM-16';
     }
 
-    // CM-43: PFMS Beneficiary Retrigger (Must strictly match CDCMS CM-43 screen)
-    const isCm43 = pageText.includes('ScreenCode(CM-43)') || 
-                   pageText.includes('ScreenCode (CM-43)') || 
-                   (pageText.includes('PFMS BENEFICIARY RETRIGGER') && pageText.includes('Retrigger PFMS Request')) ||
-                   url.includes('pfmsbeneficiaryretrigger');
-    if (isCm43) {
+    // 2. CM-43: PFMS Beneficiary Retrigger (Must strictly match CDCMS CM-43 screen)
+    const hasCm43Code = /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageText) || 
+                        /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageHtml);
+    const hasCm43Url = url.includes('pfmsbeneficiaryretrigger') || 
+                       (url.includes('pfms') && url.includes('retrigger'));
+    const hasPfmsRetriggerBtn = DOMFinder.getPfmsRetriggerButton() !== null || 
+                                /retrigger\s*pfms\s*request/i.test(pageText);
+
+    if (hasCm43Code || hasCm43Url || (hasPfmsRetriggerBtn && /pfms/i.test(pageText))) {
       return 'CM-43';
     }
 
-    // CM-16: Block Consumer (Must strictly match CDCMS CM-16 screen)
-    const isCm16 = pageText.includes('ScreenCode(CM-16)') || 
-                   pageText.includes('ScreenCode (CM-16)') ||
-                   (pageText.includes('BLOCK CONSUMER') && DOMFinder.getBlockButton() !== null && DOMFinder.getBlockReasonSelect() !== null) ||
-                   (url.includes('blockconsumer') && DOMFinder.getBlockButton() !== null);
-    if (isCm16) {
+    // 3. CM-16: Block Consumer (Must strictly match CDCMS CM-16 screen)
+    const hasCm16Code = /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageText) || 
+                        /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageHtml);
+    const hasCm16Url = url.includes('blockconsumer') || 
+                       url.includes('block_consumer') || 
+                       url.includes('consumerblock');
+    const hasBlockReason = /block\s*reason/i.test(pageText) || 
+                          DOMFinder.getBlockReasonSelect() !== null;
+    const hasBlockHeader = /consumer\s*management\/block\s*consumer/i.test(pageText);
+
+    if (hasCm16Code || hasCm16Url || hasBlockHeader || (hasBlockReason && DOMFinder.getConsumerNoInput() !== null)) {
       return 'CM-16';
     }
 
+    // Not on CM-16 or CM-43 (e.g. Order Booking OF-02, Distributor Data, Home, Reports)
     return null;
   }
 
@@ -985,6 +1011,9 @@
     setTimeout(() => {
       checkAndResumeJob();
     }, 600);
+
+    // Check updates in background
+    checkGitHubUpdates(false);
   }
 
   // Parse consumer list from textarea
@@ -2111,14 +2140,10 @@
 
   // Initialize once DOM is ready and unified storage is synchronized
   async function initApp() {
-    if (!isSupportedPage()) {
-      return;
-    }
     if (typeof LicenseManager !== 'undefined' && LicenseManager.ready) {
       await LicenseManager.ready();
     }
-    createUI(false);
-    checkGitHubUpdates();
+    checkAndUpdateScreenVisibility();
   }
 
   if (document.readyState === 'loading') {
