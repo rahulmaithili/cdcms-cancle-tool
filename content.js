@@ -280,29 +280,30 @@
       return 'CM-16';
     }
 
-    // 2. CM-43: PFMS Beneficiary Retrigger (Must strictly match CDCMS CM-43 screen)
-    const hasCm43Code = /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageText) || 
-                        /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageHtml);
-    const hasCm43Url = url.includes('pfmsbeneficiaryretrigger') || 
-                       (url.includes('pfms') && url.includes('retrigger'));
-    const hasPfmsRetriggerBtn = DOMFinder.getPfmsRetriggerButton() !== null || 
-                                /retrigger\s*pfms\s*request/i.test(pageText);
+    // 2. CM-43: PFMS Beneficiary Retrigger
+    // In CDCMS: URL has "pfms" OR screen header has "CM-43" OR "PFMS Beneficiary Retrigger"
+    const isCm43 = url.includes('pfms') || 
+                   /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageText) || 
+                   /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageHtml) ||
+                   /cm-?43/i.test(pageText) ||
+                   /pfms\s*beneficiary\s*retrigger/i.test(pageText) ||
+                   /retrigger\s*pfms\s*request/i.test(pageText);
 
-    if (hasCm43Code || hasCm43Url || (hasPfmsRetriggerBtn && /pfms/i.test(pageText))) {
+    if (isCm43) {
       return 'CM-43';
     }
 
-    // 3. CM-16: Block Consumer (Must strictly match CDCMS CM-16 screen)
-    const hasCm16Code = /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageText) || 
-                        /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageHtml);
-    const hasCm16Url = url.includes('blockconsumer') || 
-                       url.includes('block_consumer') || 
-                       url.includes('consumerblock');
-    const hasBlockReason = /block\s*reason/i.test(pageText) || 
-                          DOMFinder.getBlockReasonSelect() !== null;
-    const hasBlockHeader = /consumer\s*management\/block\s*consumer/i.test(pageText);
+    // 3. CM-16: Block Consumer
+    // In CDCMS: URL has "blockconsumer" OR screen header has "CM-16" OR "Block Consumer"
+    const isCm16 = url.includes('blockconsumer') || 
+                   url.includes('consumerblock') ||
+                   /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageText) || 
+                   /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageHtml) ||
+                   /cm-?16/i.test(pageText) ||
+                   /consumer\s*management\/block\s*consumer/i.test(pageText) ||
+                   /block\s*reason/i.test(pageText);
 
-    if (hasCm16Code || hasCm16Url || hasBlockHeader || (hasBlockReason && DOMFinder.getConsumerNoInput() !== null)) {
+    if (isCm16) {
       return 'CM-16';
     }
 
@@ -328,18 +329,15 @@
       return;
     }
 
-    // User is on CM-16 or CM-43 screen
-    const isClosed = sessionStorage.getItem('cdcms_blocker_closed') === 'true';
-    if (!isClosed) {
-      if (!root) {
-        createUI(false);
-      } else {
-        if (root.style.display === 'none') {
-          root.style.display = 'block';
-        }
-        if (screen !== activeMode) {
-          switchMode(screen);
-        }
+    // User is on CM-16 or CM-43 screen -> MUST SHOW automatically!
+    if (!root) {
+      createUI(false);
+    } else {
+      if (root.style.display === 'none') {
+        root.style.display = 'block';
+      }
+      if (screen !== activeMode) {
+        switchMode(screen);
       }
     }
   }
@@ -407,14 +405,6 @@
   function createUI(forceOpen = false) {
     // Only open on supported CDCMS screens unless explicitly requested by user
     if (!forceOpen && !isSupportedPage()) {
-      const existing = document.getElementById('cdcms-blocker-root');
-      if (existing) existing.style.display = 'none';
-      return;
-    }
-
-    // Check if user previously closed it in this session
-    const isClosed = sessionStorage.getItem('cdcms_blocker_closed') === 'true';
-    if (isClosed && !forceOpen) {
       const existing = document.getElementById('cdcms-blocker-root');
       if (existing) existing.style.display = 'none';
       return;
@@ -868,18 +858,13 @@
     const launcherClose = document.getElementById('cdcms-launcher-close');
     const launcherLabel = document.getElementById('cdcms-launcher-label');
 
-    function closeToolCompletely() {
-      const root = document.getElementById('cdcms-blocker-root');
-      if (root) root.style.display = 'none';
-      sessionStorage.setItem('cdcms_blocker_closed', 'true');
-    }
-
-    if (closeBtn) closeBtn.addEventListener('click', closeToolCompletely);
+    if (closeBtn) closeBtn.addEventListener('click', minimizeToBottom);
 
     if (launcherClose) {
       launcherClose.addEventListener('click', (e) => {
         e.stopPropagation();
-        closeToolCompletely();
+        const root = document.getElementById('cdcms-blocker-root');
+        if (root) root.style.display = 'none';
       });
     }
 
