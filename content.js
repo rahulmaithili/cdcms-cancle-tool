@@ -256,29 +256,62 @@
     const url = window.location.href.toLowerCase();
     const pageText = (document.body ? document.body.innerText : '');
 
+    // Test simulator page support
+    if (url.includes('test_cdcms_page')) {
+      const v43 = document.getElementById('viewCm43');
+      if (v43 && v43.style.display !== 'none') return 'CM-43';
+      return 'CM-16';
+    }
+
     // CM-43: PFMS Beneficiary Retrigger
     if (url.includes('pfmsbeneficiaryretrigger') || url.includes('pfmsb') || 
         pageText.includes('ScreenCode(CM-43)') || pageText.includes('ScreenCode (CM-43)') || 
-        pageText.includes('PFMS BENEFICIARY RETRIGGER')) {
+        pageText.includes('PFMS BENEFICIARY RETRIGGER') || pageText.includes('Retrigger PFMS Request')) {
       return 'CM-43';
     }
 
     // CM-16: Block Consumer
-    if (url.includes('blockconsumer.aspx') || url.includes('test_cdcms_page') || 
+    if (url.includes('blockconsumer') || 
         pageText.includes('ScreenCode(CM-16)') || pageText.includes('ScreenCode (CM-16)') ||
-        pageText.includes('BLOCK CONSUMER')) {
+        (pageText.includes('BLOCK CONSUMER') && (DOMFinder.getBlockButton() !== null || DOMFinder.getBlockReasonSelect() !== null))) {
       return 'CM-16';
     }
 
     return null;
   }
 
+  // Strict check: ONLY return true for CM-16 or CM-43 screens!
   function isSupportedPage() {
-    const url = window.location.href.toLowerCase();
-    if (url.includes('dcmsglobal') || url.includes('dcms') || url.includes('hpcl.co.in') || url.includes('test_cdcms_page')) {
-      return true;
-    }
     return detectPageScreen() !== null;
+  }
+
+  // Dynamically check and update visibility when navigating inside CDCMS portal
+  function checkAndUpdateScreenVisibility() {
+    const screen = detectPageScreen();
+    const root = document.getElementById('cdcms-blocker-root');
+
+    if (!screen) {
+      // User navigated to another tab/page (e.g. Order Booking, Home, etc.) -> Hide completely!
+      if (root && root.style.display !== 'none') {
+        root.style.display = 'none';
+      }
+      return;
+    }
+
+    // User is on CM-16 or CM-43 screen
+    const isClosed = sessionStorage.getItem('cdcms_blocker_closed') === 'true';
+    if (!isClosed) {
+      if (!root) {
+        createUI(false);
+      } else {
+        if (root.style.display === 'none') {
+          root.style.display = 'block';
+        }
+        if (screen !== activeMode) {
+          switchMode(screen);
+        }
+      }
+    }
   }
 
   // Minimize floating panel to bottom-right pill
@@ -2105,6 +2138,11 @@
   if (typeof chrome !== 'undefined' && chrome.runtime && chrome.runtime.onMessage) {
     chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       if (request.action === 'OPEN_PANEL') {
+        const screen = detectPageScreen();
+        if (!screen) {
+          sendResponse({ status: 'unsupported_page' });
+          return;
+        }
         sessionStorage.removeItem('cdcms_blocker_closed');
         createUI(true); // Force open when user clicks icon
         restoreFromBottom();
@@ -2124,9 +2162,13 @@
     });
   }
 
-  // Periodically check if CDCMS loaded dropdown or screen dynamically
+  // Periodically check if CDCMS loaded dropdown or changed screen dynamically
   setInterval(() => {
+    checkAndUpdateScreenVisibility();
     syncPageReasonOptions();
-  }, 3000);
+  }, 1000);
+
+  window.addEventListener('popstate', checkAndUpdateScreenVisibility);
+  window.addEventListener('hashchange', checkAndUpdateScreenVisibility);
 
 })();

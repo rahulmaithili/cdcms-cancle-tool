@@ -117,6 +117,10 @@ async function activatePanel() {
     }
 
     chrome.tabs.sendMessage(tab.id, { action: 'OPEN_PANEL' }, async (response) => {
+      if (response && response.status === 'unsupported_page') {
+        statusEl.innerHTML = '<span style="color: #dc2626; font-size: 10.5px;">Please open <b>Block Consumer (CM-16)</b> or <b>PFMS Retrigger (CM-43)</b> page first.</span>';
+        return;
+      }
       if (chrome.runtime.lastError || !response) {
         try {
           await chrome.scripting.insertCSS({
@@ -128,8 +132,13 @@ async function activatePanel() {
             files: ['license.js', 'content.js']
           });
           setTimeout(() => {
-            chrome.tabs.sendMessage(tab.id, { action: 'OPEN_PANEL' }).catch(() => {});
-            window.close();
+            chrome.tabs.sendMessage(tab.id, { action: 'OPEN_PANEL' }, (res2) => {
+              if (res2 && res2.status === 'unsupported_page') {
+                statusEl.innerHTML = '<span style="color: #dc2626; font-size: 10.5px;">Please open <b>Block Consumer (CM-16)</b> or <b>PFMS Retrigger (CM-43)</b> page first.</span>';
+              } else {
+                window.close();
+              }
+            });
           }, 400);
         } catch (e) {
           statusEl.textContent = 'Please refresh the CDCMS page (Press F5).';
