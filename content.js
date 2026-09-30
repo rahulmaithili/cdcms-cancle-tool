@@ -262,6 +262,19 @@
            url.includes('test_cdcms_page');
   }
 
+  // Get visible page text strictly excluding the extension's own DOM panel to prevent self-matching
+  function getPortalPageText() {
+    const root = document.getElementById('cdcms-blocker-root');
+    if (!root) {
+      return document.body ? (document.body.innerText || '') : '';
+    }
+    const orig = root.style.display;
+    root.style.display = 'none';
+    const text = document.body ? (document.body.innerText || '') : '';
+    root.style.display = orig;
+    return text;
+  }
+
   // Detect which screen the user is currently on (CM-16 Block Consumer or CM-43 PFMS Retrigger)
   function detectPageScreen() {
     // 1. Must be on HP Gas CDCMS portal or test simulator (Never on google, youtube, other sites)
@@ -270,8 +283,6 @@
     }
 
     const url = window.location.href.toLowerCase();
-    const pageText = (document.body ? (document.body.innerText || '') : '');
-    const pageHtml = (document.body ? (document.body.innerHTML || '') : '');
 
     // Test simulator page support
     if (url.includes('test_cdcms_page')) {
@@ -280,13 +291,22 @@
       return 'CM-16';
     }
 
+    // Immediately exclude Home, Default, and general navigation screens
+    if (url.includes('home.aspx') || url.includes('/views/home') || url.includes('default.aspx')) {
+      return null;
+    }
+
+    // Exclude Order Booking (OF-02) and other unrelated modules by URL
+    if (url.includes('orderbooking') || url.includes('orderfulfillment') || url.includes('distributordata') || url.includes('suvidhaclub')) {
+      return null;
+    }
+
+    const pageText = getPortalPageText();
+
     // 2. CM-43: PFMS Beneficiary Retrigger
-    // In CDCMS: URL has "pfms" OR screen header has "CM-43" OR "PFMS Beneficiary Retrigger"
-    const isCm43 = url.includes('pfms') || 
-                   /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageText) || 
-                   /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageHtml) ||
-                   /cm-?43/i.test(pageText) ||
-                   /pfms\s*beneficiary\s*retrigger/i.test(pageText) ||
+    // In CDCMS: URL has "pfms" OR screen title has ScreenCode(CM-43) OR button "Retrigger PFMS Request"
+    const isCm43 = (url.includes('pfms') && (url.includes('retrigger') || url.includes('beneficiary') || url.includes('consumermanagement') || url.includes('pfmsb'))) ||
+                   /screencode\s*\(?\s*cm-?43\s*\)?/i.test(pageText) ||
                    /retrigger\s*pfms\s*request/i.test(pageText);
 
     if (isCm43) {
@@ -294,14 +314,11 @@
     }
 
     // 3. CM-16: Block Consumer
-    // In CDCMS: URL has "blockconsumer" OR screen header has "CM-16" OR "Block Consumer"
-    const isCm16 = url.includes('blockconsumer') || 
-                   url.includes('consumerblock') ||
-                   /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageText) || 
-                   /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageHtml) ||
-                   /cm-?16/i.test(pageText) ||
-                   /consumer\s*management\/block\s*consumer/i.test(pageText) ||
-                   /block\s*reason/i.test(pageText);
+    // In CDCMS: URL has "blockconsumer" OR screen title has ScreenCode(CM-16) OR form has Block Reason dropdown
+    const isCm16 = (url.includes('blockconsumer') || url.includes('consumerblock')) ||
+                   /screencode\s*\(?\s*cm-?16\s*\)?/i.test(pageText) ||
+                   (/consumer\s*management\/block\s*consumer/i.test(pageText)) ||
+                   (/block\s*reason/i.test(pageText) && /consumer\s*no/i.test(pageText));
 
     if (isCm16) {
       return 'CM-16';
