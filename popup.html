@@ -104,6 +104,61 @@
     .btn-activate:hover {
       background: #15803d;
     }
+    .google-btn {
+      width: 100%;
+      background: #ffffff;
+      color: #1e293b;
+      border: 1px solid #cbd5e1;
+      padding: 8px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-bottom: 8px;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+      transition: background 0.2s;
+    }
+    .google-btn:hover {
+      background: #f1f5f9;
+    }
+    .google-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+    .divider {
+      display: flex;
+      align-items: center;
+      margin: 8px 0;
+      color: #94a3b8;
+      font-size: 9.5px;
+      font-weight: 700;
+    }
+    .divider::before, .divider::after {
+      content: "";
+      flex: 1;
+      border-bottom: 1px solid #e2e8f0;
+    }
+    .divider span {
+      padding: 0 6px;
+    }
+    .renew-link-btn {
+      display: block;
+      width: 100%;
+      text-align: center;
+      box-sizing: border-box;
+      background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+      color: white;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 11px;
+      padding: 6px 10px;
+      border-radius: 6px;
+      margin-top: 6px;
+    }
     #status-msg {
       font-size: 11px;
       color: #059669;
@@ -190,19 +245,31 @@
 
   <!-- Quick Activation Form (Shown if not activated) -->
   <div id="activation-form" style="display: none; margin-bottom: 10px;">
+    <!-- Google Login -->
+    <button id="popup-google-btn" class="google-btn">
+      <svg class="cdcms-icon" viewBox="0 0 24 24" width="14" height="14"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>
+      <span>Sign in with Google</span>
+    </button>
+
+    <div class="divider"><span>OR ACTIVATE WITH KEY</span></div>
+
     <div class="lic-input-group">
-      <input type="text" id="popup-lic-key" class="lic-input" placeholder="Paste License Key">
+      <input type="text" id="popup-lic-key" class="lic-input" placeholder="LW-XXXX-XXXX-XXXX">
       <button id="popup-activate-btn" class="btn-activate">Activate</button>
     </div>
-    <!-- LicenseVault Portal Links -->
+
+    <!-- Renewal / Device Reset Action Container -->
+    <div id="popup-action-wrap" style="display: none; margin-bottom: 6px;"></div>
+
+    <!-- LicenseWala Portal Links -->
     <div style="display: flex; gap: 6px; margin-top: 6px;">
-      <a href="https://licensescript.netlify.app/#pricing-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #93c5fd; color: #0284c7; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        Get on LicenseVault
+      <a href="https://licensescript.netlify.app/pricing" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #93c5fd; color: #0284c7; padding: 5px; border-radius: 5px; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        Plans & Pricing
       </a>
-      <a href="https://licensescript.netlify.app/#validate-section" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 5px; border-radius: 5px; font-size: 10.5px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
-        <svg class="cdcms-icon" viewBox="0 0 24 24" width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-        Verify on Web
+      <a href="https://licensescript.netlify.app/account" target="_blank" style="flex: 1; text-align: center; text-decoration: none; background: #f8fafc; border: 1px solid #cbd5e1; color: #475569; padding: 5px; border-radius: 5px; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; gap: 4px;">
+        <svg class="cdcms-icon" viewBox="0 0 24 24" width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+        My Account
       </a>
     </div>
   </div>

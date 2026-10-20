@@ -1,23 +1,30 @@
 /**
- * LicenseVault - Next-Gen Software Licensing & Activation Platform Client
+ * LicenseWala - Software Licensing & Activation Platform Client
  * Official Platform: https://licensescript.netlify.app/
- * Developed by Mr. Rahul Script
+ * Developer Integration: Google Sign-In & License Key Verification
  * English Only Implementation
  */
 
 const LicenseManager = (function() {
   'use strict';
 
-  // LicenseVault Configuration
+  // LicenseWala Official Configuration
   const CONFIG = {
-    PLATFORM_NAME: 'LicenseVault',
-    PLATFORM_URL: 'https://licensescript.netlify.app/',
-    VALIDATE_URL: 'https://licensescript.netlify.app/#validate-section',
-    PRODUCTS_URL: 'https://licensescript.netlify.app/#products-section',
-    GAS_API_URL: 'https://script.google.com/macros/s/AKfycbyniiGJoVV3_P2KKifUfw-8U8E-1EnYGEKpc3wByfdsmKKDKkedI87UR5nS4SUln3aE/exec',
-    SECRET_SALT: 'RahulScript_SaaS_2026_HPGas_CDCMS_LicKey_Auth',
+    PLATFORM_NAME: 'LicenseWala',
+    PLATFORM_URL: 'https://licensescript.netlify.app',
+    GOOGLE_CLIENT_ID: '17079355400-krquge8l14g0vjp3tbsqmjrkdmh2repk.apps.googleusercontent.com',
+    GOOGLE_VERIFY_URL: 'https://licensescript.netlify.app/api/google-verify',
+    KEY_VERIFY_URL: 'https://licensescript.netlify.app/api/verify-license',
+    PRICING_URL: 'https://licensescript.netlify.app/pricing',
+    ACCOUNT_URL: 'https://licensescript.netlify.app/account',
+    PRODUCT_SLUG: 'cdcms-pro',
+    DEVICE_NAME: 'HP Gas CDCMS Blocker',
     STORAGE_KEY: 'cdcms_license_info',
     DEVICE_ID_KEY: 'cdcms_device_id',
+    GOOGLE_TOKEN_KEY: 'cdcms_google_id_token',
+    SECRET_SALT: 'RahulScript_SaaS_2026_HPGas_CDCMS_LicKey_Auth',
+    MAX_OFFLINE_GRACE_MS: 24 * 60 * 60 * 1000, // 24 hours offline limit
+    RECHECK_INTERVAL_MS: 3 * 60 * 60 * 1000,    // Re-verify every 3 hours
     SUPPORT_WHATSAPP: '+917564948617',
     SUPPORT_EMAIL: 'life.rahulg@gmail.com'
   };
@@ -27,6 +34,7 @@ const LicenseManager = (function() {
   let cachedLicense = null;
   let isReady = false;
   let readyResolvers = [];
+  let isReverifying = false;
 
   function ready() {
     return new Promise((resolve) => {
@@ -43,7 +51,7 @@ const LicenseManager = (function() {
     }
   }
 
-  // 1. Immediate synchronous fallback from localStorage
+  // 1. Synchronous fallback from localStorage
   try {
     if (typeof localStorage !== 'undefined') {
       cachedDeviceId = localStorage.getItem(CONFIG.DEVICE_ID_KEY) || null;
@@ -54,12 +62,10 @@ const LicenseManager = (function() {
     }
   } catch (e) {}
 
-  // 2. Asynchronous Master Synchronization with chrome.storage.local
-  // This ensures identical Device ID and License status across Extension Popup and CDCMS Content Scripts
+  // 2. Master Synchronization with chrome.storage.local
   if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
     chrome.storage.local.get([CONFIG.DEVICE_ID_KEY, CONFIG.STORAGE_KEY], (items) => {
       try {
-        // Sync Device ID
         if (items && items[CONFIG.DEVICE_ID_KEY]) {
           cachedDeviceId = items[CONFIG.DEVICE_ID_KEY];
           if (typeof localStorage !== 'undefined') {
@@ -68,18 +74,17 @@ const LicenseManager = (function() {
         } else if (cachedDeviceId) {
           chrome.storage.local.set({ [CONFIG.DEVICE_ID_KEY]: cachedDeviceId });
         } else {
-          // Generate unified persistent Device ID
+          // Generate persistent Hardware ID (HWID)
           const randA = Math.random().toString(36).substring(2, 8).toUpperCase();
           const randB = Math.random().toString(36).substring(2, 8).toUpperCase();
           const timeHex = Date.now().toString(16).toUpperCase();
-          cachedDeviceId = `LV-${randA}-${randB}-${timeHex.slice(-6)}`;
+          cachedDeviceId = `LW-HWID-${randA}-${randB}-${timeHex.slice(-6)}`;
           if (typeof localStorage !== 'undefined') {
             localStorage.setItem(CONFIG.DEVICE_ID_KEY, cachedDeviceId);
           }
           chrome.storage.local.set({ [CONFIG.DEVICE_ID_KEY]: cachedDeviceId });
         }
 
-        // Sync License Info
         if (items && items[CONFIG.STORAGE_KEY]) {
           cachedLicense = items[CONFIG.STORAGE_KEY];
           if (typeof localStorage !== 'undefined') {
@@ -89,13 +94,13 @@ const LicenseManager = (function() {
           chrome.storage.local.set({ [CONFIG.STORAGE_KEY]: cachedLicense });
         }
       } catch (err) {
-        console.warn('[LicenseVault] Storage sync error:', err);
+        console.warn('[LicenseWala] Storage sync error:', err);
       } finally {
         notifyReady();
       }
     });
 
-    // Real-time synchronization listener across popup, background, and content tabs
+    // Real-time synchronization across popup, background, and content tabs
     if (chrome.storage.onChanged) {
       chrome.storage.onChanged.addListener((changes, area) => {
         if (area === 'local') {
@@ -118,6 +123,15 @@ const LicenseManager = (function() {
               window.dispatchEvent(new CustomEvent('cdcms_license_synced', { detail: cachedLicense }));
             }
           }
+          // Listen for token captured by auth_bridge
+          if (changes[CONFIG.GOOGLE_TOKEN_KEY] && changes[CONFIG.GOOGLE_TOKEN_KEY].newValue) {
+            const capturedToken = changes[CONFIG.GOOGLE_TOKEN_KEY].newValue;
+            verifyGoogleIdToken(capturedToken).then(res => {
+              if (typeof window !== 'undefined' && window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('cdcms_google_login_completed', { detail: res }));
+              }
+            }).catch(() => {});
+          }
         }
       });
     }
@@ -126,8 +140,7 @@ const LicenseManager = (function() {
   }
 
   /**
-   * Generates or retrieves a unique persistent device ID for this browser.
-   * Synchronized across Extension Popup and Webpage Content Script via chrome.storage.local.
+   * Generates or retrieves a persistent HWID (hardware/machine fingerprint).
    */
   function getDeviceId() {
     if (cachedDeviceId) return cachedDeviceId;
@@ -137,7 +150,7 @@ const LicenseManager = (function() {
         const randA = Math.random().toString(36).substring(2, 8).toUpperCase();
         const randB = Math.random().toString(36).substring(2, 8).toUpperCase();
         const timeHex = Date.now().toString(16).toUpperCase();
-        id = `LV-${randA}-${randB}-${timeHex.slice(-6)}`;
+        id = `LW-HWID-${randA}-${randB}-${timeHex.slice(-6)}`;
         if (typeof localStorage !== 'undefined') {
           localStorage.setItem(CONFIG.DEVICE_ID_KEY, id);
         }
@@ -148,12 +161,273 @@ const LicenseManager = (function() {
       }
       return id;
     } catch (e) {
-      return 'LV-DEVICE-DEFAULT-01';
+      return 'LW-HWID-DEFAULT-01';
     }
   }
 
   /**
-   * Cryptographic signature generator for offline license keys.
+   * Triggers the Google Sign-in flow via Chrome runtime message to background worker.
+   */
+  function startGoogleSignIn() {
+    return new Promise((resolve, reject) => {
+      if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
+        // Fallback: Open auth URL in new tab/window
+        const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
+        const redirectUri = 'https://licensescript.netlify.app/auth/callback';
+        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&response_type=id_token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20email%20profile&nonce=${nonce}&prompt=select_account`;
+        window.open(authUrl, 'LicenseWalaAuth', 'width=520,height=640');
+        resolve({ status: 'opened_window' });
+        return;
+      }
+
+      chrome.runtime.sendMessage({ action: 'START_GOOGLE_LOGIN' }, (response) => {
+        if (chrome.runtime.lastError) {
+          return reject(new Error(chrome.runtime.lastError.message));
+        }
+        resolve(response || { status: 'launched' });
+      });
+    });
+  }
+
+  /**
+   * Path A: Verify Google ID Token against LicenseWala server.
+   * POST https://licensescript.netlify.app/api/google-verify
+   * Body: { id_token, hwid, product_slug }
+   */
+  async function verifyGoogleIdToken(idToken) {
+    if (!idToken || typeof idToken !== 'string') {
+      return { valid: false, message: 'Invalid Google authentication token.' };
+    }
+
+    const hwid = getDeviceId();
+    const payload = {
+      id_token: idToken.trim(),
+      hwid: hwid,
+      product_slug: CONFIG.PRODUCT_SLUG
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const response = await fetch(CONFIG.GOOGLE_VERIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const result = await response.json().catch(() => ({}));
+
+      // Rate limited
+      if (response.status === 429) {
+        return {
+          valid: false,
+          status: 'rate_limited',
+          message: 'Too many requests. Please wait a minute and retry.'
+        };
+      }
+
+      // Invalid token or unverified email
+      if (response.status === 401) {
+        return {
+          valid: false,
+          status: 'unauthorized',
+          message: result.message || 'Google authentication expired. Please sign in again.'
+        };
+      }
+
+      // Active or Grace license
+      if (result.active === true) {
+        const isGrace = result.status === 'grace';
+        const isTrial = result.type === 'trial' || result.trial === true;
+
+        const licenseData = {
+          valid: true,
+          active: true,
+          status: isGrace ? 'grace' : 'active',
+          type: isTrial ? 'trial' : 'paid',
+          trial: isTrial,
+          email: result.email || '',
+          customer_name: result.customer_name || 'Customer',
+          product_name: result.product_name || 'CDCMS Multi-Tool Suite (PRO)',
+          plan_name: result.plan_name || (isTrial ? 'Free Trial' : 'Pro Plan'),
+          license_key: result.license_key || '',
+          expiry_date: result.expiry_date || result.trial_ends_at || '',
+          days_left: typeof result.days_left === 'number' ? result.days_left : 30,
+          max_devices: result.max_devices || 1,
+          renew_url: result.renew_url || CONFIG.PRICING_URL,
+          portal_url: result.portal_url || CONFIG.ACCOUNT_URL,
+          message: result.message || (isGrace ? 'License in 3-day grace period. Please renew.' : 'License activated via Google sign-in.'),
+          lastVerifiedAt: Date.now(),
+          deviceId: hwid,
+          authMethod: 'google',
+          idToken: idToken // Saved to allow silent background re-verifications while valid
+        };
+
+        saveLicense(licenseData);
+        return licenseData;
+      }
+
+      // License not active (expired, trial_expired, no_license, device_mismatch, etc.)
+      const reason = result.reason || 'inactive';
+      let message = result.message || '';
+
+      if (!message) {
+        switch (reason) {
+          case 'expired':
+            message = `License expired on ${result.expiry_date || 'earlier date'}. Please renew your plan.`;
+            break;
+          case 'trial_expired':
+            message = 'Your 7-day free trial has expired. Please upgrade to a Pro plan to continue.';
+            break;
+          case 'no_license':
+          case 'no_account':
+            message = 'No active license found for this Google account. Choose a plan or activate trial.';
+            break;
+          case 'device_mismatch':
+            message = 'Maximum device limit reached. Please reset your device binding on your LicenseWala account.';
+            break;
+          case 'locked':
+          case 'paused':
+          case 'revoked':
+            message = 'Your license account is locked or suspended. Please contact LicenseWala support.';
+            break;
+          default:
+            message = 'License verification failed. Please try again.';
+            break;
+        }
+      }
+
+      return {
+        valid: false,
+        active: false,
+        status: reason,
+        reason: reason,
+        email: result.email || '',
+        expiry_date: result.expiry_date || '',
+        renew_url: result.renew_url || CONFIG.PRICING_URL,
+        portal_url: result.portal_url || CONFIG.ACCOUNT_URL,
+        message: message
+      };
+    } catch (err) {
+      console.warn('[LicenseWala] Google verify network error:', err.message);
+      return {
+        valid: false,
+        networkError: true,
+        message: 'Could not connect to LicenseWala server. Please check your internet connection.'
+      };
+    }
+  }
+
+  /**
+   * Path B: Verify License Key directly against LicenseWala server.
+   * POST https://licensescript.netlify.app/api/verify-license
+   * Body: { key, hwid, deviceName }
+   */
+  async function verifyLicenseKey(keyString) {
+    const cleanKey = (keyString || '').trim().toUpperCase();
+    if (!cleanKey) {
+      return { valid: false, message: 'Please enter a license key.' };
+    }
+
+    // Emergency offline check for offline-signed keys (RS-...) if provided
+    if (cleanKey.startsWith('RS-')) {
+      const offlineRes = validateOfflineKey(cleanKey);
+      if (offlineRes.valid) {
+        saveLicense(offlineRes);
+        return offlineRes;
+      }
+    }
+
+    const hwid = getDeviceId();
+    const payload = {
+      key: cleanKey,
+      hwid: hwid,
+      deviceName: CONFIG.DEVICE_NAME
+    };
+
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 12000);
+
+      const response = await fetch(CONFIG.KEY_VERIFY_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      const result = await response.json().catch(() => ({}));
+
+      if (result.valid === true || result.status === 'active' || result.status === 'grace') {
+        const isGrace = result.status === 'grace';
+        const isTrial = result.trial === true || cleanKey.startsWith('LW-TRIAL-');
+
+        const licenseData = {
+          valid: true,
+          active: true,
+          status: isGrace ? 'grace' : 'active',
+          type: isTrial ? 'trial' : 'paid',
+          trial: isTrial,
+          plan_name: result.plan_name || (isTrial ? 'Free Trial' : 'Pro Plan'),
+          product_name: result.product_name || 'CDCMS Multi-Tool Suite (PRO)',
+          license_key: cleanKey,
+          key: cleanKey,
+          days_left: typeof result.days_left === 'number' ? result.days_left : 30,
+          expiry_date: result.expires_at || result.trial_ends_at || '',
+          renew_url: result.renewal_url || result.renew_url || CONFIG.PRICING_URL,
+          portal_url: result.portal_url || CONFIG.ACCOUNT_URL,
+          message: result.message || (isGrace ? 'License in 3-day grace period. Please renew.' : 'License active!'),
+          lastVerifiedAt: Date.now(),
+          deviceId: hwid,
+          authMethod: 'key'
+        };
+
+        saveLicense(licenseData);
+        return licenseData;
+      }
+
+      // Expired / Invalid
+      const reason = result.status || 'invalid';
+      let message = result.message || '';
+      if (!message) {
+        if (reason === 'expired') {
+          message = 'License key has expired. Please renew on LicenseWala.';
+        } else if (reason === 'device_mismatch') {
+          message = 'Key is already bound to another machine. Please reset device lock on website.';
+        } else {
+          message = 'Invalid License Key. Please check and try again.';
+        }
+      }
+
+      return {
+        valid: false,
+        active: false,
+        status: reason,
+        reason: reason,
+        renew_url: result.renewal_url || result.renew_url || CONFIG.PRICING_URL,
+        message: message
+      };
+    } catch (err) {
+      console.warn('[LicenseWala] Key verify network error:', err.message);
+      // Fallback: Check if we have an active offline grace session for this key
+      const current = checkLicenseStatus();
+      if (current && current.valid && current.key === cleanKey) {
+        return current;
+      }
+      return {
+        valid: false,
+        networkError: true,
+        message: 'Could not connect to LicenseWala server. Please check your internet connection.'
+      };
+    }
+  }
+
+  /**
+   * Cryptographic signature generator for offline license keys (emergency fallback).
    */
   function generateSignature(plan, expiryDate, salt) {
     const raw = `${plan}:${expiryDate}:${salt}`;
@@ -174,15 +448,7 @@ const LicenseManager = (function() {
   }
 
   /**
-   * Generates a valid offline license key (used by admin or key generator).
-   */
-  function createLicenseKey(plan = 'PRO', expiryDateStr = '20271231') {
-    const sig = generateSignature(plan.toUpperCase(), expiryDateStr, CONFIG.SECRET_SALT);
-    return `RS-${plan.toUpperCase()}-${expiryDateStr}-${sig}`;
-  }
-
-  /**
-   * Validates an offline cryptographic license key (RS-[PLAN]-[YYYYMMDD]-[SIG]).
+   * Validates an offline cryptographic backup key (RS-[PLAN]-[YYYYMMDD]-[SIG]).
    */
   function validateOfflineKey(keyString) {
     if (!keyString || typeof keyString !== 'string') {
@@ -218,196 +484,55 @@ const LicenseManager = (function() {
         return {
           valid: false,
           expired: true,
-          message: `License expired on ${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}/${year}. Please renew on LicenseVault.`
+          status: 'expired',
+          renew_url: CONFIG.PRICING_URL,
+          message: `License expired on ${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}/${year}. Please renew on LicenseWala.`
         };
       }
 
       const formattedExpiry = `${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}/${year}`;
+      const diffMs = expiryDate.getTime() - Date.now();
+      const remainingDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
+
       return {
         valid: true,
+        active: true,
         status: 'active',
-        plan: plan,
-        expiry: formattedExpiry,
-        expiryRaw: expiryStr,
-        lifetime: false,
+        type: 'paid',
+        plan_name: plan,
+        expiry_date: formattedExpiry,
+        days_left: remainingDays,
         key: cleanKey,
-        name: 'Authorized User',
-        company: 'Licensed HP Gas Agency',
+        license_key: cleanKey,
+        customer_name: 'Authorized User',
         deviceId: getDeviceId(),
-        source: 'Cryptographic Key',
+        source: 'Offline Signature',
+        lastVerifiedAt: Date.now(),
         message: 'License Active'
       };
     } else {
       return {
         valid: true,
+        active: true,
         status: 'active',
-        plan: plan,
-        expiry: 'Lifetime (No Expiry)',
-        expiryRaw: '99991231',
+        type: 'paid',
+        plan_name: plan,
+        expiry_date: 'Lifetime (No Expiry)',
+        days_left: 9999,
         lifetime: true,
         key: cleanKey,
-        name: 'Authorized User',
-        company: 'Licensed HP Gas Agency',
+        license_key: cleanKey,
+        customer_name: 'Authorized User',
         deviceId: getDeviceId(),
-        source: 'Lifetime Cryptographic Key',
+        source: 'Lifetime Signature',
+        lastVerifiedAt: Date.now(),
         message: 'Lifetime License Active'
       };
     }
   }
 
   /**
-   * Online real-time verification against LicenseVault Cloud API.
-   * Query: ?action=verify_license&licenseKey=...&deviceId=...
-   */
-  async function verifyOnline(keyString) {
-    const cleanKey = (keyString || '').trim().toUpperCase();
-    if (!cleanKey) {
-      return { valid: false, message: 'Please enter a license key.' };
-    }
-
-    const deviceId = getDeviceId();
-    const apiUrl = `${CONFIG.GAS_API_URL}?action=verify_license&licenseKey=${encodeURIComponent(cleanKey)}&deviceId=${encodeURIComponent(deviceId)}&t=${Date.now()}`;
-
-    try {
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 9000);
-
-      const response = await fetch(apiUrl, {
-        method: 'GET',
-        signal: controller.signal
-      });
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        throw new Error(`Server returned HTTP ${response.status}`);
-      }
-
-      const result = await response.json();
-      const status = (result.status || '').toLowerCase();
-
-      if (status === 'active') {
-        return {
-          valid: true,
-          status: 'active',
-          key: cleanKey,
-          name: result.name || 'Subscriber',
-          company: result.company || 'Licensed Agency',
-          expiry: result.expiry || 'Active',
-          plan: result.plan || 'PRO',
-          deviceId: deviceId,
-          source: 'LicenseVault Cloud',
-          message: 'License verified successfully on LicenseVault Cloud!'
-        };
-      } else if (status === 'pending' || status === 'pending_payment') {
-        return {
-          valid: false,
-          status: 'pending',
-          message: 'Payment verification pending. Admin approval is in progress on LicenseVault.'
-        };
-      } else if (status === 'expired') {
-        return {
-          valid: false,
-          status: 'expired',
-          expired: true,
-          message: `License expired on ${result.expiry || 'previous term'}. Please renew your subscription on LicenseVault.`
-        };
-      } else if (status === 'blocked') {
-        return {
-          valid: false,
-          status: 'blocked',
-          message: 'License has been blocked by administrator. Please contact LicenseVault support.'
-        };
-      } else if (status === 'device_mismatch') {
-        return {
-          valid: false,
-          status: 'device_mismatch',
-          message: result.message || 'License is locked to another computer. Reset device lock on LicenseVault dashboard.'
-        };
-      } else {
-        return {
-          valid: false,
-          status: 'invalid',
-          message: result.message || 'License key is invalid or not found on LicenseVault.'
-        };
-      }
-    } catch (err) {
-      console.warn('[LicenseVault] Online verification failed (network/timeout):', err.message);
-      return {
-        valid: false,
-        networkError: true,
-        message: 'Could not connect to LicenseVault server. Checking offline fallback...'
-      };
-    }
-  }
-
-  /**
-   * Dual-mode validator: Checks LicenseVault Cloud first, then falls back to offline cryptographic signature.
-   */
-  async function validateKeyAsync(keyString) {
-    const cleanKey = (keyString || '').trim().toUpperCase();
-    if (!cleanKey) {
-      return { valid: false, message: 'Please enter a license key.' };
-    }
-
-    // 1. If key format is an offline cryptographic key (RS-...), test locally first
-    if (cleanKey.startsWith('RS-')) {
-      const offlineResult = validateOfflineKey(cleanKey);
-      if (offlineResult.valid) {
-        return offlineResult;
-      }
-    }
-
-    // 2. Query LicenseVault Cloud API in real-time
-    const onlineResult = await verifyOnline(cleanKey);
-    if (onlineResult.valid) {
-      return onlineResult;
-    }
-
-    // 3. If online returned network error, try offline check as fallback
-    if (onlineResult.networkError) {
-      const fallbackCheck = validateOfflineKey(cleanKey);
-      if (fallbackCheck.valid) {
-        return fallbackCheck;
-      }
-      return {
-        valid: false,
-        message: 'Network connection failed. Please check your internet connection and try again.'
-      };
-    }
-
-    return onlineResult;
-  }
-
-  /**
-   * Synchronous validation check (for instant local / cached verification).
-   */
-  function validateKey(keyString) {
-    if (!keyString || typeof keyString !== 'string') {
-      return { valid: false, message: 'Please enter a license key.' };
-    }
-
-    const cleanKey = keyString.trim().toUpperCase();
-
-    // Check offline key format
-    if (cleanKey.startsWith('RS-')) {
-      return validateOfflineKey(cleanKey);
-    }
-
-    // Check cached active license
-    const stored = getStoredLicense();
-    if (stored && stored.key === cleanKey && stored.valid) {
-      return stored;
-    }
-
-    return {
-      valid: false,
-      message: 'Cloud verification required. Click Activate to verify online with LicenseVault.'
-    };
-  }
-
-  /**
-   * Robust date parser for all common license date formats:
-   * YYYYMMDD, YYYY-MM-DD, DD/MM/YYYY, ISO, and Lifetime.
+   * Robust date parser for all date formats.
    */
   function parseExpiryDate(dateStr) {
     if (!dateStr || typeof dateStr !== 'string') return null;
@@ -415,14 +540,12 @@ const LicenseManager = (function() {
     if (s === '99991231' || s.toLowerCase().includes('lifetime')) {
       return new Date(9999, 11, 31, 23, 59, 59);
     }
-    // Format: YYYYMMDD (e.g. 20261231)
     if (/^\d{8}$/.test(s)) {
       const y = parseInt(s.substring(0, 4), 10);
       const m = parseInt(s.substring(4, 6), 10) - 1;
       const d = parseInt(s.substring(6, 8), 10);
       return new Date(y, m, d, 23, 59, 59);
     }
-    // Format: DD/MM/YYYY (e.g. 31/12/2026)
     if (/^\d{1,2}\/\d{1,2}\/\d{4}/.test(s)) {
       const parts = s.split('/');
       const d = parseInt(parts[0], 10);
@@ -430,7 +553,6 @@ const LicenseManager = (function() {
       const y = parseInt(parts[2], 10);
       return new Date(y, m, d, 23, 59, 59);
     }
-    // Format: YYYY-MM-DD (e.g. 2026-12-31)
     if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
       const parts = s.split('T')[0].split('-');
       const y = parseInt(parts[0], 10);
@@ -454,7 +576,8 @@ const LicenseManager = (function() {
   }
 
   /**
-   * Evaluates the current license status including remaining days, expiry checks, and renewal necessity.
+   * Evaluates the current license status.
+   * Handles active, grace, trial, expired, offline grace, and unlicensed states.
    */
   function checkLicenseStatus() {
     try {
@@ -463,43 +586,67 @@ const LicenseManager = (function() {
         const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
         if (raw) parsed = JSON.parse(raw);
       }
-      if (!parsed || !parsed.key) {
+
+      if (!parsed || (!parsed.valid && !parsed.active)) {
         return {
           status: 'unlicensed',
           valid: false,
-          message: 'No license key activated. Please enter your license key to unlock.'
+          active: false,
+          renew_url: CONFIG.PRICING_URL,
+          portal_url: CONFIG.ACCOUNT_URL,
+          message: 'Sign in with your LicenseWala account or enter a license key to unlock.'
         };
       }
 
-      // Check if Lifetime
-      if (parsed.lifetime || parsed.expiryRaw === '99991231' || (parsed.expiry && String(parsed.expiry).toLowerCase().includes('lifetime'))) {
+      // Check Offline Grace Period (Max 24 hours from last successful check)
+      const lastCheck = parsed.lastVerifiedAt || 0;
+      const offlineElapsed = Date.now() - lastCheck;
+      if (lastCheck > 0 && offlineElapsed > CONFIG.MAX_OFFLINE_GRACE_MS) {
         return {
           ...parsed,
-          status: 'active',
-          valid: true,
-          lifetime: true,
-          remainingDays: 99999,
-          formattedExpiry: 'Lifetime (No Expiry)',
-          message: 'Lifetime License Active'
+          status: 'offline_expired',
+          valid: false,
+          active: false,
+          renew_url: CONFIG.PRICING_URL,
+          message: 'Offline limit reached (24 hours). Please connect to the internet to verify your license.'
         };
       }
 
-      // Check expiry date
-      const expDate = parseExpiryDate(parsed.expiryRaw || parsed.expiry);
-      if (expDate) {
-        const now = new Date();
-        const diffMs = expDate.getTime() - now.getTime();
-        const remainingDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+      // Paid license inside 3-day grace period
+      if (parsed.status === 'grace') {
+        return {
+          ...parsed,
+          status: 'grace',
+          valid: true,
+          active: true,
+          grace: true,
+          remainingDays: 0,
+          formattedExpiry: parsed.expiry_date || 'Grace Period',
+          renew_url: parsed.renew_url || CONFIG.PRICING_URL,
+          message: parsed.message || 'License expired! 3-day grace period active. Please renew now.'
+        };
+      }
 
-        if (diffMs <= 0 || remainingDays <= 0) {
+      // Check explicit expiry if date available
+      const expDate = parseExpiryDate(parsed.expiry_date || parsed.expiry);
+      if (expDate) {
+        const diffMs = expDate.getTime() - Date.now();
+        const daysLeft = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+        if (diffMs <= 0 || daysLeft <= 0) {
+          const isTrial = parsed.type === 'trial' || parsed.trial === true;
           return {
             ...parsed,
-            status: 'expired',
+            status: isTrial ? 'trial_expired' : 'expired',
             valid: false,
+            active: false,
             expired: true,
             remainingDays: 0,
             formattedExpiry: formatDate(expDate),
-            message: `License expired on ${formatDate(expDate)}. Please renew your license on LicenseVault to continue.`
+            renew_url: parsed.renew_url || CONFIG.PRICING_URL,
+            message: isTrial
+              ? 'Your 7-day free trial has expired. Please buy a plan on LicenseWala.'
+              : `License expired on ${formatDate(expDate)}. Please renew on LicenseWala.`
           };
         }
 
@@ -507,44 +654,52 @@ const LicenseManager = (function() {
           ...parsed,
           status: 'active',
           valid: true,
-          expired: false,
-          remainingDays: remainingDays,
+          active: true,
+          remainingDays: daysLeft,
           formattedExpiry: formatDate(expDate),
-          message: `Active License: ${remainingDays} day${remainingDays === 1 ? '' : 's'} remaining (valid till ${formatDate(expDate)})`
+          renew_url: parsed.renew_url || CONFIG.PRICING_URL,
+          message: parsed.message || `Active License: ${daysLeft} day${daysLeft === 1 ? '' : 's'} remaining`
         };
       }
 
-      if (parsed.valid) {
+      // Default active
+      if (parsed.valid || parsed.active) {
         return {
           ...parsed,
           status: 'active',
           valid: true,
-          remainingDays: 30,
-          formattedExpiry: parsed.expiry || 'Active',
-          message: 'License Active'
+          active: true,
+          remainingDays: typeof parsed.days_left === 'number' ? parsed.days_left : 30,
+          formattedExpiry: parsed.expiry_date || 'Active',
+          renew_url: parsed.renew_url || CONFIG.PRICING_URL,
+          message: parsed.message || 'License Active'
         };
       }
 
       return {
         status: 'unlicensed',
         valid: false,
-        message: 'Please activate a valid License Key to unlock the tool.'
+        active: false,
+        renew_url: CONFIG.PRICING_URL,
+        message: 'Please activate your license on LicenseWala.'
       };
     } catch (e) {
       return {
         status: 'unlicensed',
         valid: false,
-        message: 'Failed to read license info. Please re-activate your key.'
+        active: false,
+        renew_url: CONFIG.PRICING_URL,
+        message: 'Could not read license. Please sign in again.'
       };
     }
   }
 
   /**
-   * Retrieves stored active license. Returns object ONLY if active and not expired.
+   * Retrieves active license. Returns object ONLY if active.
    */
   function getStoredLicense() {
     const status = checkLicenseStatus();
-    if (status && status.valid && status.status === 'active') {
+    if (status && status.valid && status.active) {
       return status;
     }
     return null;
@@ -583,7 +738,7 @@ const LicenseManager = (function() {
         localStorage.removeItem(CONFIG.STORAGE_KEY);
       }
       if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-        chrome.storage.local.remove([CONFIG.STORAGE_KEY]);
+        chrome.storage.local.remove([CONFIG.STORAGE_KEY, CONFIG.GOOGLE_TOKEN_KEY]);
       }
       if (typeof window !== 'undefined' && window.dispatchEvent) {
         window.dispatchEvent(new CustomEvent('cdcms_license_synced', { detail: null }));
@@ -591,19 +746,52 @@ const LicenseManager = (function() {
     } catch (e) {}
   }
 
+  /**
+   * Background re-verification of the license on start or periodic schedule.
+   */
+  async function reverifyInBackground() {
+    if (isReverifying) return;
+    const lic = getStoredLicense();
+    if (!lic) return;
+
+    isReverifying = true;
+    try {
+      if (lic.authMethod === 'key' && (lic.key || lic.license_key)) {
+        await verifyLicenseKey(lic.key || lic.license_key);
+      } else if (lic.idToken) {
+        await verifyGoogleIdToken(lic.idToken);
+      }
+    } catch (e) {
+      console.warn('[LicenseWala] Background reverify check skipped:', e.message);
+    } finally {
+      isReverifying = false;
+    }
+  }
+
+  // Auto trigger background re-verification after start
+  setTimeout(() => {
+    reverifyInBackground();
+  }, 4000);
+
+  // Periodic reverify interval
+  setInterval(() => {
+    reverifyInBackground();
+  }, CONFIG.RECHECK_INTERVAL_MS);
+
   return {
     CONFIG,
     ready,
     getDeviceId,
-    validateKey,
-    validateKeyAsync,
+    startGoogleSignIn,
+    verifyGoogleIdToken,
+    verifyLicenseKey,
+    validateKeyAsync: verifyLicenseKey, // Backward compatibility alias
     validateOfflineKey,
-    verifyOnline,
-    createLicenseKey,
     checkLicenseStatus,
     getStoredLicense,
     saveLicense,
     removeLicense,
+    reverifyInBackground,
     parseExpiryDate,
     formatDate
   };

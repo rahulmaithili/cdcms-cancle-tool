@@ -35,10 +35,10 @@ echo.
 echo ========================================================
 echo   [SUCCESS] Latest Version Successfully Installed!
 echo.
-echo   Agla Step (Final Step):
-echo   1. Chrome me naya tab khol kar type karein: chrome://extensions
-echo   2. "HP Gas CDCMS Automation Tool" ke Reload (circle arrow) par click karein.
-echo   3. CDCMS portal refresh (F5) karein.
+echo   Final Step:
+echo   1. Open a new Chrome tab and go to: chrome://extensions
+echo   2. Click the Reload (circle arrow) button on "HP Gas CDCMS Automation Tool".
+echo   3. Refresh (F5) the CDCMS portal page.
 echo ========================================================
 echo.
 pause

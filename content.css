@@ -792,6 +792,104 @@
 .cdcms-lock-status {
   font-size: 11px;
   min-height: 16px;
+  line-height: 1.4;
+  margin-top: 4px;
+}
+
+/* Google Sign-In Button */
+.cdcms-google-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  background: #ffffff;
+  color: #1f2937;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  box-sizing: border-box;
+}
+
+.cdcms-google-btn:hover {
+  background: #f9fafb;
+  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.15);
+  border-color: #cbd5e1;
+}
+
+.cdcms-google-btn:active {
+  transform: translateY(1px);
+}
+
+.cdcms-google-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+/* Divider */
+.cdcms-lock-divider {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 10px 0;
+  color: #64748b;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
+.cdcms-lock-divider::before,
+.cdcms-lock-divider::after {
+  content: "";
+  flex: 1;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.cdcms-lock-divider span {
+  padding: 0 8px;
+}
+
+/* Renewal and Account Portal Buttons */
+.cdcms-renew-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: 100%;
+  background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+  color: #ffffff;
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-decoration: none;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  box-sizing: border-box;
+  margin-top: 6px;
+}
+
+.cdcms-renew-btn:hover {
+  opacity: 0.9;
+}
+
+.cdcms-grace-banner {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid #f59e0b;
+  color: #fbbf24;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
 .cdcms-lock-wa-btn {

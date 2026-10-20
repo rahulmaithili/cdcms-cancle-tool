@@ -19,6 +19,7 @@ function updateLicenseUI() {
   const licStatusText = document.getElementById('lic-status-text');
   const licBadgeTag = document.getElementById('lic-badge-tag');
   const actForm = document.getElementById('activation-form');
+  const actionWrap = document.getElementById('popup-action-wrap');
   const deviceIdEl = document.getElementById('popup-device-id');
 
   if (deviceIdEl && typeof LicenseManager !== 'undefined') {
@@ -27,28 +28,69 @@ function updateLicenseUI() {
 
   const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
 
-  if (licStatus && licStatus.valid && licStatus.status === 'active') {
-    licBox.className = 'license-badge license-active';
-    const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays}d left (${licStatus.formattedExpiry})`;
-    licStatusText.innerHTML = `${ICONS.SHIELD} Active: ${licStatus.plan || 'PRO'} • ${remainingStr}`;
-    licBadgeTag.textContent = 'UNLOCKED';
-    licBadgeTag.style.background = 'rgba(16, 185, 129, 0.2)';
-    licBadgeTag.style.color = '#065f46';
-    actForm.style.display = 'none';
-  } else if (licStatus && licStatus.status === 'expired') {
+  if (licStatus && licStatus.valid && licStatus.active) {
+    const isTrial = licStatus.trial || licStatus.type === 'trial';
+    const isGrace = licStatus.status === 'grace' || licStatus.grace === true;
+
+    if (isGrace) {
+      licBox.className = 'license-badge';
+      licBox.style.background = '#fef3c7';
+      licBox.style.color = '#92400e';
+      licBox.style.border = '1px solid #fde68a';
+      licStatusText.innerHTML = `${ICONS.ALERT} 3-Day Grace Active • <a href="${licStatus.renew_url || 'https://licensescript.netlify.app/pricing'}" target="_blank" style="color: #0284c7; text-decoration: underline;">Renew</a>`;
+      licBadgeTag.textContent = 'GRACE';
+      licBadgeTag.style.background = '#f59e0b';
+      licBadgeTag.style.color = '#ffffff';
+      actForm.style.display = 'none';
+    } else if (isTrial) {
+      licBox.className = 'license-badge license-active';
+      const daysLeft = licStatus.remainingDays || licStatus.days_left || 0;
+      licStatusText.innerHTML = `${ICONS.SHIELD} Free Trial: ${daysLeft}d left`;
+      licBadgeTag.textContent = 'TRIAL';
+      licBadgeTag.style.background = 'rgba(16, 185, 129, 0.2)';
+      licBadgeTag.style.color = '#065f46';
+      actForm.style.display = 'none';
+    } else {
+      licBox.className = 'license-badge license-active';
+      const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays || licStatus.days_left || 0}d left`;
+      licStatusText.innerHTML = `${ICONS.SHIELD} Active: ${licStatus.plan_name || 'PRO'} • ${remainingStr}`;
+      licBadgeTag.textContent = 'ACTIVE';
+      licBadgeTag.style.background = 'rgba(16, 185, 129, 0.2)';
+      licBadgeTag.style.color = '#065f46';
+      actForm.style.display = 'none';
+    }
+    if (actionWrap) actionWrap.style.display = 'none';
+  } else if (licStatus && (licStatus.status === 'expired' || licStatus.status === 'trial_expired')) {
+    const isTrial = licStatus.status === 'trial_expired';
     licBox.className = 'license-badge license-locked';
-    licStatusText.innerHTML = `${ICONS.ALERT} Expired on ${licStatus.formattedExpiry}! Please Renew`;
+    licStatusText.innerHTML = `${ICONS.ALERT} ${isTrial ? 'Trial Expired' : 'License Expired'}`;
     licBadgeTag.textContent = 'EXPIRED';
     licBadgeTag.style.background = '#dc2626';
     licBadgeTag.style.color = '#ffffff';
     actForm.style.display = 'block';
+    if (actionWrap) {
+      actionWrap.style.display = 'block';
+      actionWrap.innerHTML = `<a href="${licStatus.renew_url || 'https://licensescript.netlify.app/pricing'}" target="_blank" class="renew-link-btn">Renew on LicenseWala</a>`;
+    }
+  } else if (licStatus && licStatus.status === 'device_mismatch') {
+    licBox.className = 'license-badge license-locked';
+    licStatusText.innerHTML = `${ICONS.ALERT} Device Limit Reached`;
+    licBadgeTag.textContent = 'LOCKED';
+    licBadgeTag.style.background = '#f59e0b';
+    licBadgeTag.style.color = '#ffffff';
+    actForm.style.display = 'block';
+    if (actionWrap) {
+      actionWrap.style.display = 'block';
+      actionWrap.innerHTML = `<a href="${licStatus.portal_url || 'https://licensescript.netlify.app/account'}" target="_blank" class="renew-link-btn" style="background: #0284c7;">Reset Devices in Account</a>`;
+    }
   } else {
     licBox.className = 'license-badge license-locked';
-    licStatusText.innerHTML = `${ICONS.LOCK} License Required to Use`;
+    licStatusText.innerHTML = `${ICONS.LOCK} License Required`;
     licBadgeTag.textContent = 'LOCKED';
     licBadgeTag.style.background = 'rgba(0, 0, 0, 0.1)';
     licBadgeTag.style.color = '#991b1b';
     actForm.style.display = 'block';
+    if (actionWrap) actionWrap.style.display = 'none';
   }
 }
 
@@ -65,7 +107,27 @@ if (copyDevBtn) {
   });
 }
 
-// Activate License button
+// Google Sign-In button click handler
+const googleBtn = document.getElementById('popup-google-btn');
+if (googleBtn) {
+  googleBtn.addEventListener('click', async () => {
+    const statusMsg = document.getElementById('status-msg');
+    googleBtn.disabled = true;
+    const origHTML = googleBtn.innerHTML;
+    googleBtn.innerHTML = `<span>Connecting to Google...</span>`;
+    statusMsg.innerHTML = '<span style="color: #0284c7;">Complete sign-in in popup window...</span>';
+
+    try {
+      await LicenseManager.startGoogleSignIn();
+    } catch (err) {
+      statusMsg.innerHTML = `<span style="color: #dc2626;">Sign-in error: ${err.message}</span>`;
+      googleBtn.disabled = false;
+      googleBtn.innerHTML = origHTML;
+    }
+  });
+}
+
+// Activate License Key button
 document.getElementById('popup-activate-btn').addEventListener('click', async () => {
   const input = document.getElementById('popup-lic-key');
   const key = input.value.trim();
@@ -79,13 +141,12 @@ document.getElementById('popup-activate-btn').addEventListener('click', async ()
 
   activateBtn.disabled = true;
   activateBtn.textContent = 'Checking...';
-  statusMsg.innerHTML = '<span style="color: #0284c7;">Verifying with LicenseVault Cloud...</span>';
+  statusMsg.innerHTML = '<span style="color: #0284c7;">Verifying with LicenseWala Server...</span>';
 
   try {
-    const res = await LicenseManager.validateKeyAsync(key);
+    const res = await LicenseManager.verifyLicenseKey(key);
 
     if (res.valid) {
-      LicenseManager.saveLicense(res);
       updateLicenseUI();
       statusMsg.innerHTML = `<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} License Activated Successfully!</span>`;
       // Notify all tabs to unlock immediately
@@ -98,6 +159,7 @@ document.getElementById('popup-activate-btn').addEventListener('click', async ()
       });
     } else {
       statusMsg.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} ${res.message}</span>`;
+      updateLicenseUI();
     }
   } catch (err) {
     statusMsg.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} Verification error: ${err.message}</span>`;
@@ -105,6 +167,34 @@ document.getElementById('popup-activate-btn').addEventListener('click', async ()
     activateBtn.disabled = false;
     activateBtn.textContent = 'Activate';
   }
+});
+
+// Listen for Google login completed event dispatched by LicenseManager
+window.addEventListener('cdcms_google_login_completed', (e) => {
+  const res = e.detail;
+  const statusMsg = document.getElementById('status-msg');
+  if (googleBtn) {
+    googleBtn.disabled = false;
+    googleBtn.innerHTML = `<span>Sign in with Google</span>`;
+  }
+  if (res && res.valid) {
+    updateLicenseUI();
+    if (statusMsg) statusMsg.innerHTML = `<span style="color: #16a34a; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} ${res.message || 'License Activated!'}</span>`;
+    chrome.tabs.query({}, (tabs) => {
+      tabs.forEach(t => {
+        if (t?.id) {
+          chrome.tabs.sendMessage(t.id, { action: 'LICENSE_UPDATED' }).catch(() => {});
+        }
+      });
+    });
+  } else if (res) {
+    updateLicenseUI();
+    if (statusMsg) statusMsg.innerHTML = `<span style="color: #dc2626; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} ${res.message || 'Activation failed.'}</span>`;
+  }
+});
+
+window.addEventListener('cdcms_license_synced', () => {
+  updateLicenseUI();
 });
 
 async function activatePanel() {
@@ -188,7 +278,7 @@ async function checkGitHubUpdates() {
               ${ICONS.CHECK} New Version v${remoteVersion} Available!
             </div>
             <div style="color: #3730a3; font-size: 10px; margin-top: 3px; line-height: 1.4;">
-              Tool folder me <b>update.bat</b> par double click karein, fir <b>chrome://extensions</b> me Reload (🔄) karein.
+              Run <b>update.bat</b> in the tool folder, then click Reload (🔄) in <b>chrome://extensions</b>.
             </div>
           </div>
         `;
@@ -232,7 +322,7 @@ async function manualCheckPopupUpdate() {
               ${ICONS.CHECK} New Version v${remoteVersion} Available!
             </div>
             <div style="color: #3730a3; font-size: 10px; margin-top: 4px; line-height: 1.4;">
-              Tool folder me <b>update.bat</b> par double click karein, fir <b>chrome://extensions</b> me Reload (🔄) karein.
+              Run <b>update.bat</b> in the tool folder, then click Reload (🔄) in <b>chrome://extensions</b>.
             </div>
           </div>
         `;

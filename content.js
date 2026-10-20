@@ -393,6 +393,7 @@
 
   // Premium SVG Icons map (Lightweight vector icons replacing emojis)
   const ICONS = {
+    GOOGLE: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="16" height="16"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/></svg>',
     BOLT: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>',
     PLAY: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><polygon points="6 4 20 12 6 20 6 4"/></svg>',
     PAUSE: '<svg class="cdcms-icon" viewBox="0 0 24 24" width="13" height="13" fill="currentColor" stroke="none"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></svg>',
@@ -506,32 +507,50 @@
 
           <!-- Lock Screen (When License Inactive) -->
           <div id="cdcms-lock-screen" class="cdcms-lock-screen">
-            ${logoBigUrl ? `<img src="${logoBigUrl}" class="cdcms-lock-logo" alt="RS Logo">` : ''}
+            ${logoBigUrl ? `<img src="${logoBigUrl}" class="cdcms-lock-logo" alt="LicenseWala Logo">` : ''}
             <div class="cdcms-lock-title">License Activation Required</div>
-            <div class="cdcms-lock-subtitle">Please enter your LicenseVault key to unlock bulk blocking for this agency.</div>
+            <div class="cdcms-lock-subtitle">Sign in with your LicenseWala account or enter a license key to unlock automation.</div>
             
-            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 10px; margin-bottom: 12px; width: 100%; box-sizing: border-box; font-size: 11px;">
-              <span style="color: #94a3b8;">Device ID:</span>
-              <code id="cdcms-lock-device-id" style="color: #38bdf8; font-family: monospace; font-weight: 700;">LV-...</code>
-              <button id="cdcms-copy-device-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer;">Copy</button>
+            <!-- Path A: Google Sign-in Button -->
+            <button type="button" id="cdcms-google-login-btn" class="cdcms-google-btn">
+              ${ICONS.GOOGLE}
+              <span>Sign in with Google</span>
+            </button>
+
+            <!-- Divider -->
+            <div class="cdcms-lock-divider">
+              <span>OR ENTER LICENSE KEY</span>
             </div>
 
+            <!-- Path B: License Key Input Wrap -->
             <div class="cdcms-lock-input-wrap">
-              <input type="text" id="cdcms-license-input" class="cdcms-lock-input" placeholder="Paste License Key" />
-              <button id="cdcms-license-submit" class="cdcms-lock-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px;">${ICONS.KEY} Activate</button>
+              <input type="text" id="cdcms-license-input" class="cdcms-lock-input" placeholder="LW-XXXX-XXXX-XXXX" />
+              <button type="button" id="cdcms-license-submit" class="cdcms-lock-btn" style="display: inline-flex; align-items: center; justify-content: center; gap: 6px;">${ICONS.KEY} Activate Key</button>
             </div>
+
+            <!-- Device HWID Pill -->
+            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 10px; margin-top: 4px; width: 100%; box-sizing: border-box; font-size: 11px;">
+              <span style="color: #94a3b8;">HWID:</span>
+              <code id="cdcms-lock-device-id" style="color: #38bdf8; font-family: monospace; font-weight: 700;">LW-...</code>
+              <button type="button" id="cdcms-copy-device-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer;">Copy</button>
+            </div>
+
             <div id="cdcms-license-msg" class="cdcms-lock-status"></div>
 
-            <div style="display: flex; gap: 8px; width: 100%; margin-top: 10px;">
-              <a href="https://licensescript.netlify.app/#pricing-section" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(2, 132, 199, 0.2); border: 1px solid #0284c7; color: #38bdf8; font-size: 11px;">
-                ${ICONS.EXTERNAL} Get on LicenseVault
+            <!-- Dynamic Action / Renew Button Area -->
+            <div id="cdcms-lock-action-wrap" style="width: 100%; display: none;"></div>
+
+            <!-- Quick Links -->
+            <div style="display: flex; gap: 8px; width: 100%; margin-top: 6px;">
+              <a href="https://licensescript.netlify.app/pricing" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(2, 132, 199, 0.2); border: 1px solid #0284c7; color: #38bdf8; font-size: 11px;">
+                ${ICONS.EXTERNAL} Plans & Pricing
               </a>
-              <a href="https://licensescript.netlify.app/#validate-section" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; font-size: 11px;">
-                ${ICONS.SEARCH} Verify on Web
+              <a href="https://licensescript.netlify.app/account" target="_blank" class="cdcms-lock-wa-btn" style="flex: 1; text-align: center; text-decoration: none; justify-content: center; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.2); color: #e2e8f0; font-size: 11px;">
+                ${ICONS.USER} My Account
               </a>
             </div>
 
-            <a href="https://wa.me/917564948617?text=Hello%20Mr.%20Rahul%20Script,%20I%20need%20a%20License%20Key%20for%20HP%20Gas%20CDCMS%20Blocker" target="_blank" class="cdcms-lock-wa-btn" style="margin-top: 8px; width: 100%; box-sizing: border-box; justify-content: center;">
+            <a href="https://wa.me/917564948617?text=Hello%20LicenseWala,%20I%20need%20help%20activating%20HP%20Gas%20CDCMS%20Tool" target="_blank" class="cdcms-lock-wa-btn" style="margin-top: 6px; width: 100%; box-sizing: border-box; justify-content: center;">
               ${ICONS.WHATSAPP} WhatsApp Support (+917564948617)
             </a>
           </div>
@@ -743,6 +762,7 @@
     const deviceIdEl = document.getElementById('cdcms-lock-device-id');
     const lockTitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-title') : null;
     const lockSubtitle = lockScreen ? lockScreen.querySelector('.cdcms-lock-subtitle') : null;
+    const lockActionWrap = document.getElementById('cdcms-lock-action-wrap');
     const launcherLabel = document.getElementById('cdcms-launcher-label');
 
     if (deviceIdEl && typeof LicenseManager !== 'undefined') {
@@ -751,34 +771,71 @@
 
     const licStatus = typeof LicenseManager !== 'undefined' ? LicenseManager.checkLicenseStatus() : null;
 
-    if (licStatus && licStatus.valid && licStatus.status === 'active') {
-      // ACTIVE STATE: Unlock cancel/block page
+    if (licStatus && licStatus.valid && licStatus.active) {
+      // ACTIVE or GRACE STATE: Unlocked
       if (lockScreen) lockScreen.style.display = 'none';
       if (mainForm) mainForm.style.display = 'flex';
       if (strip) strip.style.display = 'flex';
-      const agencyName = licStatus.company ? ` • ${licStatus.company}` : '';
-      const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays} days left - till ${licStatus.formattedExpiry}`;
-      if (stripText) stripText.innerHTML = `${ICONS.SHIELD} License Active: <strong>${licStatus.plan || 'PRO'}</strong> (${remainingStr})${agencyName}`;
-      if (launcherLabel && !launcherLabel.textContent.includes('Blocking')) {
-        launcherLabel.innerHTML = `${ICONS.BOLT} CDCMS Auto-Blocker`;
+
+      const userName = licStatus.customer_name || licStatus.email || '';
+      const userTag = userName ? ` • ${userName}` : '';
+      const isTrial = licStatus.trial || licStatus.type === 'trial';
+      const isGrace = licStatus.status === 'grace' || licStatus.grace === true;
+
+      if (isGrace) {
+        if (stripText) {
+          stripText.innerHTML = `${ICONS.ALERT} <span style="color: #f59e0b; font-weight: 700;">GRACE PERIOD:</span> ${licStatus.message || 'License expired. 3-day grace period active.'} <a href="${licStatus.renew_url || 'https://licensescript.netlify.app/pricing'}" target="_blank" style="color: #38bdf8; text-decoration: underline; margin-left: 6px; font-weight: 700;">Renew Now</a>`;
+        }
+      } else if (isTrial) {
+        const remainingStr = `${licStatus.remainingDays || licStatus.days_left || 0}d left`;
+        if (stripText) {
+          stripText.innerHTML = `${ICONS.SHIELD} <strong>Free Trial Active:</strong> ${remainingStr}${userTag} <a href="${licStatus.renew_url || 'https://licensescript.netlify.app/pricing'}" target="_blank" style="color: #38bdf8; text-decoration: underline; margin-left: 6px; font-weight: 700;">Upgrade to Pro</a>`;
+        }
+      } else {
+        const remainingStr = licStatus.lifetime ? 'Lifetime' : `${licStatus.remainingDays || licStatus.days_left || 0} days remaining`;
+        if (stripText) {
+          stripText.innerHTML = `${ICONS.SHIELD} License Active: <strong>${licStatus.plan_name || 'PRO'}</strong> (${remainingStr})${userTag}`;
+        }
       }
-    } else if (licStatus && licStatus.status === 'expired') {
-      // EXPIRED STATE: Lock completely and prompt to renew
-      if (lockScreen) lockScreen.style.display = 'flex';
-      if (mainForm) mainForm.style.display = 'none';
-      if (strip) strip.style.display = 'none';
-      if (lockTitle) lockTitle.innerHTML = `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;">${ICONS.ALERT} License Expired</span>`;
-      if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">Your access expired on <strong>${licStatus.formattedExpiry}</strong>.<br>Please renew your subscription on LicenseVault or contact Mr. Rahul Script to continue.</span>`;
-      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.ALERT} License Expired`;
-      stopAutomation();
+
+      if (launcherLabel && !launcherLabel.textContent.includes('Blocking') && !launcherLabel.textContent.includes('Retriggering')) {
+        launcherLabel.innerHTML = `${ICONS.BOLT} CDCMS Automation`;
+      }
     } else {
-      // UNLICENSED STATE: Keep locked
+      // LOCKED STATE
       if (lockScreen) lockScreen.style.display = 'flex';
       if (mainForm) mainForm.style.display = 'none';
       if (strip) strip.style.display = 'none';
-      if (lockTitle) lockTitle.textContent = 'License Activation Required';
-      if (lockSubtitle) lockSubtitle.textContent = 'Please enter your LicenseVault key to unlock bulk blocking for this agency.';
-      if (launcherLabel) launcherLabel.innerHTML = `${ICONS.LOCK} Activate License`;
+      stopAutomation();
+
+      if (licStatus && (licStatus.status === 'expired' || licStatus.status === 'trial_expired')) {
+        const isTrial = licStatus.status === 'trial_expired';
+        if (lockTitle) lockTitle.innerHTML = `<span style="color: #ef4444; display: inline-flex; align-items: center; gap: 4px;">${ICONS.ALERT} ${isTrial ? 'Free Trial Expired' : 'License Expired'}</span>`;
+        if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fca5a5;">${licStatus.message || 'Your subscription has expired. Please renew your plan to continue.'}</span>`;
+        if (lockActionWrap) {
+          lockActionWrap.style.display = 'block';
+          lockActionWrap.innerHTML = `<a href="${licStatus.renew_url || 'https://licensescript.netlify.app/pricing'}" target="_blank" class="cdcms-renew-btn">${ICONS.EXTERNAL} Renew Plan on LicenseWala</a>`;
+        }
+        if (launcherLabel) launcherLabel.innerHTML = `${ICONS.ALERT} License Expired`;
+      } else if (licStatus && licStatus.status === 'device_mismatch') {
+        if (lockTitle) lockTitle.innerHTML = `<span style="color: #f59e0b; display: inline-flex; align-items: center; gap: 4px;">${ICONS.ALERT} Device Limit Reached</span>`;
+        if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fed7aa;">This license is active on another machine. You can reset your device slots from your online account.</span>`;
+        if (lockActionWrap) {
+          lockActionWrap.style.display = 'block';
+          lockActionWrap.innerHTML = `<a href="${licStatus.portal_url || 'https://licensescript.netlify.app/account'}" target="_blank" class="cdcms-renew-btn" style="background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);">${ICONS.USER} Manage Devices in Account</a>`;
+        }
+        if (launcherLabel) launcherLabel.innerHTML = `${ICONS.LOCK} Device Limit`;
+      } else if (licStatus && licStatus.status === 'offline_expired') {
+        if (lockTitle) lockTitle.innerHTML = `<span style="color: #f59e0b; display: inline-flex; align-items: center; gap: 4px;">${ICONS.ALERT} Internet Required</span>`;
+        if (lockSubtitle) lockSubtitle.innerHTML = `<span style="color: #fed7aa;">Offline grace limit reached (24 hours). Please connect to the internet to verify your license.</span>`;
+        if (lockActionWrap) lockActionWrap.style.display = 'none';
+        if (launcherLabel) launcherLabel.innerHTML = `${ICONS.LOCK} Connect Internet`;
+      } else {
+        if (lockTitle) lockTitle.textContent = 'License Activation Required';
+        if (lockSubtitle) lockSubtitle.textContent = 'Sign in with your LicenseWala account or enter a license key to unlock automation.';
+        if (lockActionWrap) lockActionWrap.style.display = 'none';
+        if (launcherLabel) launcherLabel.innerHTML = `${ICONS.LOCK} Activate License`;
+      }
     }
   }
 
@@ -947,12 +1004,37 @@
       });
     }
 
-    // License Activation Form Handlers
+    // License Activation Handlers
+    const googleLoginBtn = document.getElementById('cdcms-google-login-btn');
     const licSubmit = document.getElementById('cdcms-license-submit');
     const licInput = document.getElementById('cdcms-license-input');
     const licMsg = document.getElementById('cdcms-license-msg');
     const deactBtn = document.getElementById('cdcms-deactivate-btn');
 
+    // Google Sign-in button click
+    if (googleLoginBtn) {
+      googleLoginBtn.addEventListener('click', async () => {
+        if (typeof LicenseManager === 'undefined') {
+          if (licMsg) licMsg.innerHTML = '<span style="color: #f87171;">License module not loaded.</span>';
+          return;
+        }
+
+        googleLoginBtn.disabled = true;
+        const originalContent = googleLoginBtn.innerHTML;
+        googleLoginBtn.innerHTML = `${ICONS.REFRESH} <span>Connecting to Google...</span>`;
+        if (licMsg) licMsg.innerHTML = '<span style="color: #38bdf8;">Please complete sign-in in the popup window...</span>';
+
+        try {
+          await LicenseManager.startGoogleSignIn();
+        } catch (err) {
+          if (licMsg) licMsg.innerHTML = `<span style="color: #f87171;">Sign-in error: ${err.message}</span>`;
+          googleLoginBtn.disabled = false;
+          googleLoginBtn.innerHTML = originalContent;
+        }
+      });
+    }
+
+    // License Key activate button click
     if (licSubmit && licInput) {
       licSubmit.addEventListener('click', async () => {
         const key = licInput.value.trim();
@@ -966,28 +1048,51 @@
         }
 
         licSubmit.disabled = true;
-        licSubmit.textContent = 'Checking...';
-        if (licMsg) licMsg.innerHTML = '<span style="color: #38bdf8;">Verifying with LicenseVault Cloud...</span>';
+        licSubmit.textContent = 'Verifying...';
+        if (licMsg) licMsg.innerHTML = '<span style="color: #38bdf8;">Verifying with LicenseWala Server...</span>';
 
         try {
-          const res = await LicenseManager.validateKeyAsync(key);
+          const res = await LicenseManager.verifyLicenseKey(key);
           if (res.valid) {
-            LicenseManager.saveLicense(res);
             if (licMsg) licMsg.innerHTML = `<span style="color: #4ade80; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} License Activated Successfully!</span>`;
             setTimeout(() => {
               updateLicenseStateUI();
-            }, 500);
+            }, 600);
           } else {
             if (licMsg) licMsg.innerHTML = `<span style="color: #f87171; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} ${res.message}</span>`;
+            updateLicenseStateUI();
           }
         } catch (err) {
           if (licMsg) licMsg.innerHTML = `<span style="color: #f87171; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} Verification error: ${err.message}</span>`;
         } finally {
           licSubmit.disabled = false;
-          licSubmit.innerHTML = `${ICONS.KEY} Activate`;
+          licSubmit.innerHTML = `${ICONS.KEY} Activate Key`;
         }
       });
     }
+
+    // Listen for Google login completed event dispatched by LicenseManager
+    window.addEventListener('cdcms_google_login_completed', (e) => {
+      const res = e.detail;
+      if (googleLoginBtn) {
+        googleLoginBtn.disabled = false;
+        googleLoginBtn.innerHTML = `${ICONS.GOOGLE} <span>Sign in with Google</span>`;
+      }
+      if (res && res.valid) {
+        if (licMsg) licMsg.innerHTML = `<span style="color: #4ade80; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CHECK} ${res.message || 'License Activated Successfully!'}</span>`;
+        setTimeout(() => {
+          updateLicenseStateUI();
+        }, 600);
+      } else if (res) {
+        if (licMsg) licMsg.innerHTML = `<span style="color: #f87171; display: inline-flex; align-items: center; gap: 4px;">${ICONS.CLOSE} ${res.message || 'Activation failed.'}</span>`;
+        updateLicenseStateUI();
+      }
+    });
+
+    // Real-time sync listener across tabs / popup
+    window.addEventListener('cdcms_license_synced', () => {
+      updateLicenseStateUI();
+    });
 
     if (deactBtn) {
       deactBtn.addEventListener('click', () => {
