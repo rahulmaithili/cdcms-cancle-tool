@@ -1,25 +1,24 @@
 /**
  * LicenseWala - Background Service Worker for HP Gas CDCMS Tool
- * Manages Google Sign-In Window and Periodic License Re-checks
+ * Manages Google Sign-In Window and Cross-Tab License Updates
  * English Only Implementation
  */
 
 let authWindowId = null;
 
-// Listen to messages from content script, popup, or auth_bridge
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  // Triggered when user clicks "Sign in with Google" in popup or content script
   if (request.action === 'START_GOOGLE_LOGIN') {
-    const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
-    const clientId = '17079355400-krquge8l14g0vjp3tbsqmjrkdmh2repk.apps.googleusercontent.com';
-    const redirectUri = 'https://licensescript.netlify.app/auth/callback';
-    const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${clientId}&response_type=id_token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20email%20profile&nonce=${nonce}&prompt=select_account`;
+    // Initiate Google Sign-In via the website's Supabase OAuth endpoint
+    // This uses the authorized redirect URI registered in Google Cloud Console
+    const targetRedirect = 'https://licensescript.netlify.app/account';
+    const authUrl = `https://wyeejbncddpxhwtijkjt.supabase.co/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(targetRedirect)}`;
 
-    // Open a dedicated centered popup window for Google login
     chrome.windows.create({
       url: authUrl,
       type: 'popup',
       width: 520,
-      height: 640,
+      height: 650,
       focused: true
     }, (win) => {
       if (win) {
@@ -27,18 +26,44 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       sendResponse({ status: 'launched', windowId: win ? win.id : null });
     });
-    return true; // Keep message channel open for async response
+    return true;
   }
 
-  if (request.action === 'GOOGLE_AUTH_TOKEN_CAPTURED') {
-    // If the auth window is still open, close it
+  // License Key captured from user's account on website
+  if (request.action === 'LICENSE_KEY_CAPTURED') {
     if (authWindowId !== null) {
-      chrome.windows.remove(authWindowId, () => {
-        authWindowId = null;
-      });
+      setTimeout(() => {
+        if (authWindowId !== null) {
+          chrome.windows.remove(authWindowId, () => {
+            authWindowId = null;
+          });
+        }
+      }, 1400);
     }
 
-    // Broadcast captured token to all open extension views/tabs
+    chrome.storage.local.set({
+      cdcms_captured_key: request.key,
+      cdcms_captured_email: request.email || '',
+      cdcms_captured_name: request.customer_name || '',
+      cdcms_captured_time: Date.now()
+    }, () => {
+      sendResponse({ status: 'key_saved' });
+    });
+    return true;
+  }
+
+  // Google ID token captured from hash (if present)
+  if (request.action === 'GOOGLE_AUTH_TOKEN_CAPTURED') {
+    if (authWindowId !== null) {
+      setTimeout(() => {
+        if (authWindowId !== null) {
+          chrome.windows.remove(authWindowId, () => {
+            authWindowId = null;
+          });
+        }
+      }, 1400);
+    }
+
     chrome.storage.local.set({
       cdcms_google_id_token: request.id_token,
       cdcms_google_token_time: Date.now()
@@ -53,32 +78,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
-// Intercept redirect tab in background if user logged in via full tab
+// Close popup window if user finishes in a tab
 chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
-  if (changeInfo.url && changeInfo.url.includes('licensescript.netlify.app') && changeInfo.url.includes('id_token=')) {
-    try {
-      const urlObj = new URL(changeInfo.url);
-      const hash = urlObj.hash ? urlObj.hash.substring(1) : '';
-      const params = new URLSearchParams(hash);
-      const idToken = params.get('id_token');
+  if (changeInfo.url && changeInfo.url.includes('licensescript.netlify.app/account')) {
+    // If auth window is currently tracking this tab, let auth_bridge inspect and close
+  }
+});
 
-      if (idToken) {
-        chrome.storage.local.set({
-          cdcms_google_id_token: idToken,
-          cdcms_google_token_time: Date.now()
-        }, () => {
-          // If this tab was part of our popup window, close it
-          if (authWindowId) {
-            chrome.windows.remove(authWindowId, () => {
-              authWindowId = null;
-            });
-          } else {
-            chrome.tabs.remove(tabId);
-          }
-        });
-      }
-    } catch (e) {
-      console.warn('[Background] Tab URL parse error:', e);
-    }
+// Clean up stored window ID if user closes auth popup manually
+chrome.windows.onRemoved.addListener((windowId) => {
+  if (windowId === authWindowId) {
+    authWindowId = null;
   }
 });

@@ -123,6 +123,15 @@ const LicenseManager = (function() {
               window.dispatchEvent(new CustomEvent('cdcms_license_synced', { detail: cachedLicense }));
             }
           }
+          // Listen for license key captured via auth_bridge on website
+          if (changes.cdcms_captured_key && changes.cdcms_captured_key.newValue) {
+            const capturedKey = changes.cdcms_captured_key.newValue;
+            verifyLicenseKey(capturedKey).then(res => {
+              if (typeof window !== 'undefined' && window.dispatchEvent) {
+                window.dispatchEvent(new CustomEvent('cdcms_google_login_completed', { detail: res }));
+              }
+            }).catch(() => {});
+          }
           // Listen for token captured by auth_bridge
           if (changes[CONFIG.GOOGLE_TOKEN_KEY] && changes[CONFIG.GOOGLE_TOKEN_KEY].newValue) {
             const capturedToken = changes[CONFIG.GOOGLE_TOKEN_KEY].newValue;
@@ -132,6 +141,19 @@ const LicenseManager = (function() {
               }
             }).catch(() => {});
           }
+        }
+      });
+    }
+
+    // Direct runtime message listener for captured key from auth_bridge
+    if (chrome.runtime && chrome.runtime.onMessage) {
+      chrome.runtime.onMessage.addListener((msg) => {
+        if (msg && msg.action === 'LICENSE_KEY_CAPTURED' && msg.key) {
+          verifyLicenseKey(msg.key).then(res => {
+            if (typeof window !== 'undefined' && window.dispatchEvent) {
+              window.dispatchEvent(new CustomEvent('cdcms_google_login_completed', { detail: res }));
+            }
+          }).catch(() => {});
         }
       });
     }
@@ -172,10 +194,9 @@ const LicenseManager = (function() {
     return new Promise((resolve, reject) => {
       if (typeof chrome === 'undefined' || !chrome.runtime || !chrome.runtime.sendMessage) {
         // Fallback: Open auth URL in new tab/window
-        const nonce = Math.random().toString(36).substring(2) + Date.now().toString(36);
-        const redirectUri = 'https://licensescript.netlify.app/auth/callback';
-        const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${CONFIG.GOOGLE_CLIENT_ID}&response_type=id_token&redirect_uri=${encodeURIComponent(redirectUri)}&scope=openid%20email%20profile&nonce=${nonce}&prompt=select_account`;
-        window.open(authUrl, 'LicenseWalaAuth', 'width=520,height=640');
+        const targetRedirect = 'https://licensescript.netlify.app/account';
+        const authUrl = `https://wyeejbncddpxhwtijkjt.supabase.co/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(targetRedirect)}`;
+        window.open(authUrl, 'LicenseWalaAuth', 'width=520,height=650');
         resolve({ status: 'opened_window' });
         return;
       }
