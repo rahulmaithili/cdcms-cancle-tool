@@ -1364,6 +1364,14 @@
     const job = getSavedJob();
     if (!job || !job.isRunning) return;
 
+    // High-security: stop the run as soon as the license is gone (e.g.
+    // removed by a failed background re-verification after an admin lock).
+    if (typeof LicenseManager !== 'undefined' && !LicenseManager.getStoredLicense()) {
+      job.isRunning = false;
+      saveJob(job);
+      return;
+    }
+
     const statusIndicator = document.getElementById('cdcms-status-indicator');
     const launcherBtn = document.getElementById('cdcms-launcher-btn');
     const launcherLabel = document.getElementById('cdcms-launcher-label');
@@ -1730,6 +1738,14 @@
   async function runNextInJob() {
     const job = getSavedJob();
     if (!job || !job.isRunning) return;
+
+    // High-security: stop the run as soon as the license is gone (e.g.
+    // removed by a failed background re-verification after an admin lock).
+    if (typeof LicenseManager !== 'undefined' && !LicenseManager.getStoredLicense()) {
+      job.isRunning = false;
+      saveJob(job);
+      return;
+    }
 
     const statusIndicator = document.getElementById('cdcms-status-indicator');
 

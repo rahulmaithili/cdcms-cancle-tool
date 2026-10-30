@@ -22,9 +22,8 @@ const LicenseManager = (function() {
     STORAGE_KEY: 'cdcms_license_info',
     DEVICE_ID_KEY: 'cdcms_device_id',
     GOOGLE_TOKEN_KEY: 'cdcms_google_id_token',
-    SECRET_SALT: 'RahulScript_SaaS_2026_HPGas_CDCMS_LicKey_Auth',
     MAX_OFFLINE_GRACE_MS: 24 * 60 * 60 * 1000, // 24 hours offline limit
-    RECHECK_INTERVAL_MS: 3 * 60 * 60 * 1000,    // Re-verify every 3 hours
+    RECHECK_INTERVAL_MS: 30 * 60 * 1000,    // Re-verify every 30 minutes (high-security: revoked keys stop within ~30 min)
     SUPPORT_WHATSAPP: '+917564948617',
     SUPPORT_EMAIL: 'life.rahulg@gmail.com'
   };
@@ -353,15 +352,6 @@ const LicenseManager = (function() {
       return { valid: false, message: 'Please enter a license key.' };
     }
 
-    // Emergency offline check for offline-signed keys (RS-...) if provided
-    if (cleanKey.startsWith('RS-')) {
-      const offlineRes = validateOfflineKey(cleanKey);
-      if (offlineRes.valid) {
-        saveLicense(offlineRes);
-        return offlineRes;
-      }
-    }
-
     const hwid = getDeviceId();
     const payload = {
       key: cleanKey,
@@ -448,111 +438,6 @@ const LicenseManager = (function() {
   }
 
   /**
-   * Cryptographic signature generator for offline license keys (emergency fallback).
-   */
-  function generateSignature(plan, expiryDate, salt) {
-    const raw = `${plan}:${expiryDate}:${salt}`;
-    let hash = 0;
-    for (let i = 0; i < raw.length; i++) {
-      const char = raw.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash;
-    }
-    const hex1 = Math.abs(hash).toString(16).toUpperCase().padStart(8, '0');
-    let hash2 = 5381;
-    for (let i = raw.length - 1; i >= 0; i--) {
-      hash2 = ((hash2 << 5) + hash2) + raw.charCodeAt(i);
-      hash2 = hash2 & hash2;
-    }
-    const hex2 = Math.abs(hash2).toString(16).toUpperCase().padStart(6, '0');
-    return (hex1 + hex2).substring(0, 10);
-  }
-
-  /**
-   * Validates an offline cryptographic backup key (RS-[PLAN]-[YYYYMMDD]-[SIG]).
-   */
-  function validateOfflineKey(keyString) {
-    if (!keyString || typeof keyString !== 'string') {
-      return { valid: false, message: 'Please enter a license key.' };
-    }
-
-    const cleanKey = keyString.trim().toUpperCase();
-    const parts = cleanKey.split('-');
-    if (parts.length !== 4 || parts[0] !== 'RS') {
-      return { valid: false, message: 'Invalid License Key format.' };
-    }
-
-    const plan = parts[1];
-    const expiryStr = parts[2];
-    const signature = parts[3];
-
-    const expectedSig = generateSignature(plan, expiryStr, CONFIG.SECRET_SALT);
-    if (signature !== expectedSig) {
-      return { valid: false, message: 'Invalid License Key signature.' };
-    }
-
-    if (expiryStr !== '99991231') {
-      const year = parseInt(expiryStr.substring(0, 4), 10);
-      const month = parseInt(expiryStr.substring(4, 6), 10) - 1;
-      const day = parseInt(expiryStr.substring(6, 8), 10);
-      const expiryDate = new Date(year, month, day, 23, 59, 59);
-
-      if (isNaN(expiryDate.getTime())) {
-        return { valid: false, message: 'Invalid expiry date encoded in key.' };
-      }
-
-      if (new Date() > expiryDate) {
-        return {
-          valid: false,
-          expired: true,
-          status: 'expired',
-          renew_url: CONFIG.PRICING_URL,
-          message: `License expired on ${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}/${year}. Please renew on LicenseWala.`
-        };
-      }
-
-      const formattedExpiry = `${day.toString().padStart(2, '0')}/${(month + 1).toString().padStart(2, '0')}/${year}`;
-      const diffMs = expiryDate.getTime() - Date.now();
-      const remainingDays = Math.max(1, Math.ceil(diffMs / (1000 * 60 * 60 * 24)));
-
-      return {
-        valid: true,
-        active: true,
-        status: 'active',
-        type: 'paid',
-        plan_name: plan,
-        expiry_date: formattedExpiry,
-        days_left: remainingDays,
-        key: cleanKey,
-        license_key: cleanKey,
-        customer_name: 'Authorized User',
-        deviceId: getDeviceId(),
-        source: 'Offline Signature',
-        lastVerifiedAt: Date.now(),
-        message: 'License Active'
-      };
-    } else {
-      return {
-        valid: true,
-        active: true,
-        status: 'active',
-        type: 'paid',
-        plan_name: plan,
-        expiry_date: 'Lifetime (No Expiry)',
-        days_left: 9999,
-        lifetime: true,
-        key: cleanKey,
-        license_key: cleanKey,
-        customer_name: 'Authorized User',
-        deviceId: getDeviceId(),
-        source: 'Lifetime Signature',
-        lastVerifiedAt: Date.now(),
-        message: 'Lifetime License Active'
-      };
-    }
-  }
-
-  /**
    * Robust date parser for all date formats.
    */
   function parseExpiryDate(dateStr) {
@@ -606,6 +491,32 @@ const LicenseManager = (function() {
       if (!parsed && typeof localStorage !== 'undefined') {
         const raw = localStorage.getItem(CONFIG.STORAGE_KEY);
         if (raw) parsed = JSON.parse(raw);
+      }
+
+      // High-security: offline-signed (RS-) licenses are no longer accepted,
+      // so a license stored by an earlier version under that scheme is
+      // treated as unlicensed. Consequence: already-issued RS- keys stop
+      // working and must be replaced with LicenseWala keys.
+      const storedKey = parsed && (parsed.key || parsed.license_key || '');
+      if (storedKey && typeof storedKey === 'string' && storedKey.toUpperCase().startsWith('RS-')) {
+        return {
+          status: 'unlicensed',
+          valid: false,
+          active: false,
+          renew_url: CONFIG.PRICING_URL,
+          portal_url: CONFIG.ACCOUNT_URL,
+          message: 'Offline-signed licenses are no longer supported. Please activate with a LicenseWala license key.'
+        };
+      }
+      if (parsed && (parsed.source === 'Offline Signature' || parsed.source === 'Lifetime Signature')) {
+        return {
+          status: 'unlicensed',
+          valid: false,
+          active: false,
+          renew_url: CONFIG.PRICING_URL,
+          portal_url: CONFIG.ACCOUNT_URL,
+          message: 'Offline-signed licenses are no longer supported. Please activate with a LicenseWala license key.'
+        };
       }
 
       if (!parsed || (!parsed.valid && !parsed.active)) {
@@ -777,10 +688,18 @@ const LicenseManager = (function() {
 
     isReverifying = true;
     try {
+      let res = null;
       if (lic.authMethod === 'key' && (lic.key || lic.license_key)) {
-        await verifyLicenseKey(lic.key || lic.license_key);
+        res = await verifyLicenseKey(lic.key || lic.license_key);
       } else if (lic.idToken) {
-        await verifyGoogleIdToken(lic.idToken);
+        res = await verifyGoogleIdToken(lic.idToken);
+      }
+      // A server verdict of invalid/expired/revoked/locked locks immediately:
+      // drop the stored license so the tool cannot keep running on it.
+      // Network errors carry networkError and keep the bounded 24h offline
+      // grace instead (checkLicenseStatus enforces the 24h limit).
+      if (res && res.valid === false && !res.networkError) {
+        removeLicense();
       }
     } catch (e) {
       console.warn('[LicenseWala] Background reverify check skipped:', e.message);
@@ -807,7 +726,6 @@ const LicenseManager = (function() {
     verifyGoogleIdToken,
     verifyLicenseKey,
     validateKeyAsync: verifyLicenseKey, // Backward compatibility alias
-    validateOfflineKey,
     checkLicenseStatus,
     getStoredLicense,
     saveLicense,
