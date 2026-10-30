@@ -912,3 +912,93 @@
   background: rgba(16, 185, 129, 0.3);
 }
 
+/* ---- Fix pack: scrolling, narrow widths, wrapping (v1.3.2) ---- */
+
+/* Panel body must be allowed to shrink inside the 88vh panel, otherwise
+   a long log clipped the footer instead of scrolling the body. */
+.cdcms-panel-body {
+  min-height: 0;
+}
+
+/* Header title truncates instead of squeezing badges/actions out. */
+.cdcms-header-title {
+  min-width: 0;
+}
+
+#cdcms-panel-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cdcms-header-title .cdcms-badge,
+.cdcms-header-actions {
+  flex-shrink: 0;
+}
+
+/* Button rows wrap instead of overflowing when the panel is narrow. */
+.cdcms-actions,
+.cdcms-footer,
+.cdcms-contact-row,
+.cdcms-github-bar {
+  flex-wrap: wrap;
+}
+
+.cdcms-label {
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.cdcms-mode-tab {
+  min-width: 0;
+}
+
+/* Long HWID wraps instead of squeezing the Copy button out. */
+.cdcms-hwid-row code {
+  word-break: break-all;
+  min-width: 0;
+}
+
+/* Narrow viewports: the fixed panel must fit the viewport.
+   (Previously 95vw + right:20px overflowed the page horizontally.) */
+@media (max-width: 480px) {
+  #cdcms-blocker-root {
+    right: 10px;
+  }
+
+  #cdcms-panel {
+    width: calc(100vw - 20px);
+    max-width: calc(100vw - 20px);
+  }
+
+  .cdcms-panel-header {
+    padding: 10px 12px;
+  }
+
+  .cdcms-header-title {
+    font-size: 12px;
+  }
+
+  .cdcms-row-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .cdcms-stats-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .cdcms-mode-tab {
+    font-size: 10.5px;
+    padding: 6px 6px;
+  }
+
+  .cdcms-actions .cdcms-btn {
+    flex-basis: 45%;
+  }
+
+  .cdcms-hwid-row {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+}
+

@@ -262,7 +262,7 @@ async function checkGitHubUpdates() {
   try {
     const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
       ? chrome.runtime.getManifest().version
-      : '1.0.0';
+      : '1.3.2';
 
     const res = await fetch(`https://raw.githubusercontent.com/rahulmaithili/cdcms-cancle-tool/main/manifest.json?t=${Date.now()}`);
     if (!res.ok) return;
@@ -296,7 +296,7 @@ async function manualCheckPopupUpdate() {
 
   const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
     ? chrome.runtime.getManifest().version
-    : '1.2.0';
+    : '1.3.2';
 
   if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
   if (btn) {
@@ -359,7 +359,7 @@ if (typeof window !== 'undefined') {
 window.addEventListener('DOMContentLoaded', async () => {
   const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
     ? chrome.runtime.getManifest().version
-    : '1.0.0';
+    : '1.3.2';
   const curVerEl = document.getElementById('popup-cur-ver');
   if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
 

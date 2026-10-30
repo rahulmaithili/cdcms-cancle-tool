@@ -450,6 +450,9 @@
 
     const logoIconUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL) ? chrome.runtime.getURL('icons/icon48.png') : '';
     const logoBigUrl = (typeof chrome !== 'undefined' && chrome.runtime?.getURL) ? chrome.runtime.getURL('icons/icon128.png') : '';
+    const extVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
+      ? chrome.runtime.getManifest().version
+      : '1.3.2';
 
     const root = document.createElement('div');
     root.id = 'cdcms-blocker-root';
@@ -478,7 +481,7 @@
             ${logoIconUrl ? `<img src="${logoIconUrl}" class="cdcms-logo-icon" alt="RS" />` : ''}
             <span id="cdcms-panel-title">${activeMode === 'CM-43' ? 'HP Gas PFMS Retrigger' : 'HP Gas CDCMS Blocker'}</span>
             <span class="cdcms-badge" id="cdcms-screen-badge">${activeMode}</span>
-            <span class="cdcms-badge" id="cdcms-ver-badge" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 10px;" title="Extension Version">v1.2.0</span>
+            <span class="cdcms-badge" id="cdcms-ver-badge" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); font-size: 10px;" title="Extension Version">v${extVersion}</span>
           </div>
           <div class="cdcms-header-actions">
             <button class="cdcms-btn-icon" id="cdcms-min-btn" title="Minimize to bottom badge">${ICONS.MINUS}</button>
@@ -497,7 +500,7 @@
           <div id="cdcms-github-bar" class="cdcms-github-bar">
             <div class="cdcms-gh-info">
               <span class="cdcms-gh-tag">Version:</span>
-              <span id="cdcms-gh-cur-ver" class="cdcms-gh-ver">v1.2.0</span>
+              <span id="cdcms-gh-cur-ver" class="cdcms-gh-ver">v${extVersion}</span>
               <span id="cdcms-gh-status-text" class="cdcms-gh-status-text">• Up to date</span>
             </div>
             <div class="cdcms-gh-btns">
@@ -529,7 +532,7 @@
             </div>
 
             <!-- Device HWID Pill -->
-            <div style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 10px; margin-top: 4px; width: 100%; box-sizing: border-box; font-size: 11px;">
+            <div class="cdcms-hwid-row" style="display: flex; align-items: center; justify-content: space-between; background: rgba(15, 23, 42, 0.6); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 6px 10px; margin-top: 4px; width: 100%; box-sizing: border-box; font-size: 11px;">
               <span style="color: #94a3b8;">HWID:</span>
               <code id="cdcms-lock-device-id" style="color: #38bdf8; font-family: monospace; font-weight: 700;">LW-...</code>
               <button type="button" id="cdcms-copy-device-btn" style="background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); color: #cbd5e1; border-radius: 4px; padding: 2px 8px; font-size: 10px; cursor: pointer;">Copy</button>
@@ -726,6 +729,14 @@
     if (!saved) return;
     try {
       logsData = JSON.parse(saved) || [];
+      // Trim history loaded from previous sessions to the same cap so
+      // old runs cannot keep the panel heavy forever.
+      if (logsData.length > 500) {
+        logsData = logsData.slice(-500);
+        try {
+          localStorage.setItem('cdcms_blocker_logs', JSON.stringify(logsData));
+        } catch (e) {}
+      }
       const logBox = document.getElementById('cdcms-log-box');
       if (logBox && logsData.length > 0) {
         logBox.innerHTML = '';
@@ -1172,6 +1183,11 @@
     `;
     if (logBox) {
       logBox.appendChild(item);
+      // Keep the visible log bounded: an unbounded log DOM made long
+      // runs progressively slower and could grow without limit.
+      while (logBox.children.length > 200) {
+        logBox.removeChild(logBox.firstChild);
+      }
       logBox.scrollTop = logBox.scrollHeight;
     }
 
@@ -1182,6 +1198,11 @@
         message,
         time: new Date().toLocaleString()
       });
+      // Cap stored history too: every log call re-serializes the whole
+      // array, so unbounded growth made each later log call slower.
+      if (logsData.length > 500) {
+        logsData = logsData.slice(-500);
+      }
       try {
         localStorage.setItem('cdcms_blocker_logs', JSON.stringify(logsData));
       } catch (e) {}
@@ -1824,6 +1845,24 @@
         return;
       }
     }
+
+    // Fetch timed out (no message and no block button within ~3.5s).
+    // Previously the function simply returned here: the item was never
+    // counted, currentIndex never advanced, and the job stayed
+    // isRunning=true forever with no code path to resume it — the
+    // silent stall seen on large batches (a single slow fetch killed
+    // the whole run). Fail just this item and move on instead.
+    job.failedCount++;
+    addLog(consumerNo, 'FAILED', 'Details not loaded after Fetch (timeout)', 'error');
+    job.currentIndex++;
+    job.stage = 'IDLE';
+    saveJob(job);
+    updateCounters(job.total, job.successCount, job.failedCount, Math.max(0, job.total - job.currentIndex));
+
+    const clearBtn = DOMFinder.getClearButton();
+    if (clearBtn) clearBtn.click();
+    await sleep(job.delayMs || 2500);
+    runNextInJob();
   }
 
   // Execute Block Step (Select reason, remarks, click block)
@@ -2189,7 +2228,7 @@
 
     const currentVersion = (typeof chrome !== 'undefined' && chrome.runtime?.getManifest)
       ? chrome.runtime.getManifest().version
-      : '1.2.0';
+      : '1.3.2';
 
     if (curVerEl) curVerEl.textContent = `v${currentVersion}`;
     if (badgeVerEl) badgeVerEl.textContent = `v${currentVersion}`;
