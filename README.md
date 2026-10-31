@@ -68,6 +68,17 @@ The extension checks GitHub for new versions and shows an
 double-click **`update.bat`** in the extension folder, then click the
 Reload icon for the extension on `chrome://extensions`.
 
+## Incognito mode
+
+The tool also works in Incognito windows:
+
+1. Open `chrome://extensions`, find this extension, and turn on
+   **Allow in Incognito**. (Chrome keeps this off by default, and no
+   extension can turn it on by itself.)
+2. That's it — the license you activated in a normal window works in
+   Incognito too, because the extension shares one license state
+   (`"incognito": "spanning"` in the manifest).
+
 ## License activation
 
 A valid **LicenseWala subscription license** is required. Keys are
